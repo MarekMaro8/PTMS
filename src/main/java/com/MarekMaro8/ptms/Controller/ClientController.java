@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid; // Do uruchomienia walidacji hasła (@Size)
-
+import com.MarekMaro8.ptms.dto.LoginRequest;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -47,6 +47,23 @@ public class ClientController {
         List<Client> clients = clientService.findAllClients();
         // Zwraca listę klientów i status 200 OK
         return ResponseEntity.ok(clients);
+    }
+
+
+    /**
+     * Endpoint: GET /api/clients/login
+     * Używany do zalogowania dla klientów.
+     */
+
+    @PostMapping("/login")
+    public ResponseEntity<Client> loginClient(@RequestBody LoginRequest loginRequest) {
+        try {
+            Client client = clientService.login(loginRequest.getEmail(), loginRequest.getPassword());
+            return ResponseEntity.ok(client);
+        } catch (IllegalArgumentException e) {
+            // Jeśli hasło lub email są złe, zwracamy 401 Unauthorized
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
     }
 }
 

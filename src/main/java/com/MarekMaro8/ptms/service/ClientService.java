@@ -3,7 +3,6 @@ package com.MarekMaro8.ptms.service;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.repository.ClientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.parameters.P;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+// SERVICE - warstwa logiki biznesowej dla encji Client
 @Service
 public class ClientService {
     private final ClientRepository clientRepository;
@@ -18,13 +18,13 @@ public class ClientService {
 
     // 1. Wstrzyknięcie Zależności (Dependency Injection)
     // Spring sam dostarczy gotową implementację ClientRepository
+    // Konstruktor z @Autowired - wstrzykuje zależności do klasy ClientService
     @Autowired
     public ClientService(ClientRepository clientRepository, PasswordEncoder passwordEncoder) {
         this.clientRepository = clientRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
-    // 2. Logika Biznesowa: Zapis nowego klienta
     @Transactional
     public Client saveClient(Client client) {
 
@@ -40,18 +40,26 @@ public class ClientService {
         // save - metoda z JpaRepository, która zapisuje obiekt w bazie danych
     }
 
-    // 3. Logika Biznesowa: Pobieranie wszystkich klientów
     public List<Client> findAllClients() {
         return clientRepository.findAll();
     }
 
-    // 4. Logika Biznesowa: Pobieranie klienta po ID
     public Optional<Client> findClientById(Long id) {
         // findById zwraca Optional, aby bezpiecznie obsłużyć brak wyniku
         return clientRepository.findById(id);
     }
 
-    // 5. Logika Biznesowa: Aktualizacja klienta
+    public Client login(String email, String password) {
+        Client client = clientRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(password, client.getPassword())) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+        return client;
+    }
+
+
     public Client updateClient(Long id, Client clientDetails) {
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Client with ID " + id + " not found."));
@@ -64,7 +72,6 @@ public class ClientService {
         return clientRepository.save(client);
     }
 
-    // 6. Logika Biznesowa: Usuwanie klienta
     public void deleteClient(Long id) {
         clientRepository.deleteById(id);
     }

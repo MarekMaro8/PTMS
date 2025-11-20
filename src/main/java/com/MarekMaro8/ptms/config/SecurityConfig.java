@@ -13,13 +13,11 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity // Włącza wsparcie dla bezpieczeństwa Spring
 public class SecurityConfig {
-    // 1. Definicja PasswordEncoder (już masz)
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // 2. KLUCZOWA METODA: Konfiguracja Zabezpieczeń
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -28,11 +26,14 @@ public class SecurityConfig {
 
                 // Konfiguracja autoryzacji żądań HTTP
                 .authorizeHttpRequests(authorize -> authorize
+
                         // ZEZWÓL na żądania POST do /api/clients (rejestracja)
                         .requestMatchers(HttpMethod.POST, "/api/clients").permitAll()
 
                         // ZEZWÓL na żądania GET do /api/clients (na razie dla testów)
                         .requestMatchers(HttpMethod.GET, "/api/clients").permitAll()
+                        // ZEZWÓL na żądania POST do /api/clients/login (logowanie)
+                        .requestMatchers(HttpMethod.POST, "/api/clients/login").permitAll()
 
                         // WSZYSTKIE inne żądania wymagają pełnej autoryzacji
                         .anyRequest().authenticated()

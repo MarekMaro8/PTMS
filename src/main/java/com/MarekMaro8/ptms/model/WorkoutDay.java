@@ -15,18 +15,31 @@ public class WorkoutDay {
     // N:1 (Wiele Dni do Jednego Planu)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workout_plan_id")
-    private WorkoutPlan workoutPlan; // Zmieniono z 'workoutPlanId'
+    private WorkoutPlan workoutPlan;
 
     private String dayName;
     private String focus;
 
-    // 1:N (Jeden Dzień ma Wiele Instrukcji Ćwiczeń) - POPRAWIONO
+    // 1:N (Jeden Dzień ma Wiele Instrukcji Ćwiczeń)
     @OneToMany(mappedBy = "workoutDay", cascade = CascadeType.ALL)
     private Set<PlanExercise> planExercises = new HashSet<>();
 
-    // 1:N (Jeden Dzień jest wykonywany Wiele Razy/Sesji) - POPRAWIONO
+    // 1:N (Jeden Dzień jest wykonywany Wiele Razy/Sesji)
     @OneToMany(mappedBy = "workoutDay", cascade = CascadeType.ALL)
     private Set<Session> sessions = new HashSet<>();
+
+    //ToDo Musisz użyć tej metody jeśli do dnia treningowego dodajesz nowe ćwiczenie
+    public void addPlanExercise(PlanExercise exercise) {
+        this.planExercises.add(exercise);
+        exercise.setWorkoutDay(this);
+    }
+
+    // Musisz użyć tej metody, gdy Dzień Treningowy dodaje nową Sesję do historii
+    public void addSession(Session session) {
+        this.sessions.add(session);
+        session.setWorkoutDay(this);
+    }
+
 
 
     public WorkoutDay() {}
@@ -53,5 +66,13 @@ public class WorkoutDay {
 
     public Long getId() {
         return id;
+    }
+
+    public WorkoutPlan getWorkoutPlan() {
+        return workoutPlan;
+    }
+
+    public void setWorkoutPlan(WorkoutPlan workoutPlan) {
+        this.workoutPlan = workoutPlan;
     }
 }

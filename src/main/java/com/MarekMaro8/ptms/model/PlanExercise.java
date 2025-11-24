@@ -9,27 +9,30 @@ public class PlanExercise {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ID z API to najlepiej String, żeby obsłużyć litery
-    private String externalExerciseId; // Zmieniono z Long na String
+    // Pole przechowujące identyfikator ćwiczenia z ExerciseDB
+    @Column(nullable = false)
+    private String externalExerciseId;
 
-    // N:1 (Wiele Instrukcji należy do Jednego Dnia)
+    private String name;
+    private Integer sets;
+    private String repsRange;
+    private Integer rpe;
+
+    // Relacja: Wiele instrukcji należy do Jednego Dnia
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workout_day_id")
-    private WorkoutDay workoutDay; // Zmieniono z 'workoutDayId'
+    private WorkoutDay workoutDay;
 
-    private String name; // Zmieniono z Long na String
-    private Integer sets; // Zmieniono z Long na Integer
-    private String repsRange; // Zakres powtórzeń (np. "8-12")
-    private Integer rpe; // Zmieniono z Long na Integer, jeśli to skala 1-10
+    public PlanExercise() {}
 
-    public PlanExercise() {
-    }
-
-    public PlanExercise(String name, Integer sets, String repsRange, Integer rpe) {
+    // KONSTRUKTOR INICJALIZUJĄCY: Kluczowe dane + Relacja
+    public PlanExercise(String externalExerciseId, String name, Integer sets, String repsRange, Integer rpe, WorkoutDay workoutDay) {
+        this.externalExerciseId = externalExerciseId;
         this.name = name;
         this.sets = sets;
         this.repsRange = repsRange;
         this.rpe = rpe;
+        this.workoutDay = workoutDay; // Ustawienie relacji (FK)
     }
 
 
@@ -68,5 +71,13 @@ public class PlanExercise {
 
     public void setRpe(Integer rpe) {
         this.rpe = rpe;
+    }
+
+    public WorkoutDay getWorkoutDay() {
+        return workoutDay;
+    }
+
+    public void setWorkoutDay(WorkoutDay workoutDay) {
+        this.workoutDay = workoutDay;
     }
 }

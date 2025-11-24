@@ -18,12 +18,19 @@ public class WorkoutPlan {
     @JoinColumn(name = "client_id")
     private Client client;
 
-    // 1:N (Jeden Plan ma Wiele Dni Treningowych) - DODANO
+    // 1:N (Jeden Plan ma Wiele Dni Treningowych)
     @OneToMany(mappedBy = "workoutPlan", cascade = CascadeType.ALL)
     private Set<WorkoutDay> workoutDays = new HashSet<>();
 
     private String name;
     private String description;
+    private boolean isActive = false;
+
+    // Musisz użyć tej metody, gdy Klient ma przypisany dzień trenignowy
+    public void addWorkoutDay(WorkoutDay day) {
+        this.workoutDays.add(day);
+        day.setWorkoutPlan(this);
+    }
 
 
     public void setClient(Client client) {
@@ -54,4 +61,11 @@ public class WorkoutPlan {
         return id;
     }
 
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
+    }
 }

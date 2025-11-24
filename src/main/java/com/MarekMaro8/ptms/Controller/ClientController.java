@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid; // Do uruchomienia walidacji hasła (@Size)
 import com.MarekMaro8.ptms.dto.LoginRequest;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @RestController // 1. Oznacza, że ta klasa obsługuje żądania HTTP
 @RequestMapping("/api/clients") // 2. Definiuje bazową ścieżkę URL

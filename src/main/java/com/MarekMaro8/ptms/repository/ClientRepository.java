@@ -15,6 +15,7 @@ public interface ClientRepository extends  JpaRepository<Client, Long> { // Long
     List<Client> findByLastName(String lastName); // Metoda do wyszukiwania klientów po nazwisku
     //List - obiekt który może zawierać wiele wartości (klientów) lub być pusty (null)
 
+    List<Client> findAllByTrainerId(Long trainerId); // Metoda do wyszukiwania klientów przypisanych do konkretnego trenera po jego ID>
 
 //tutaj sa te 2 metody bo inne klasy nie wiedza jak obslugiwac SQL, dlatego musza brac z tego interfejsu :)
     // JpaRepository dostarcza podstawowe metody CRUD (Create, Read, Update, Delete)

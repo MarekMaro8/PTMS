@@ -22,11 +22,11 @@ public class Client {
 
     // Relacja 1:N (Jeden Klient ma Wiele Planów)
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
-    private final Set<WorkoutPlan> workoutPlans = new HashSet<>();
+    private Set<WorkoutPlan> workoutPlans = new HashSet<>();
 
     // Relacja 1:N (Jeden Klient ma Wiele Sesji Historycznych)
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
-    private final Set<Session> sessions = new HashSet<>();
+    private Set<Session> sessions = new HashSet<>();
 
     private String firstName;
     private String lastName;
@@ -51,13 +51,13 @@ public class Client {
     // Musisz użyć tej metody, gdy Trener przypisuje Klientowi nowy Plan
     public void addWorkoutPlan(WorkoutPlan plan) {
         this.workoutPlans.add(plan);
-        plan.setClient(this); // Ustawienie klucza obcego (FK) po stronie Planu!
+        plan.setClient(this);
     }
 
     // Musisz użyć tej metody, gdy Klient dodaje nową Sesję do historii
     public void addSession(Session session) {
         this.sessions.add(session);
-        session.setClient(this); // Ustawienie klucza obcego (FK) po stronie Sesji!
+        session.setClient(this);
     }
 
 

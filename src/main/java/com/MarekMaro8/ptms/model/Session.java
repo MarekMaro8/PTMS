@@ -14,12 +14,12 @@ public class Session {
     // N:1 do Dnia Treningowego (Wiele Sesji do Jednego Szablonu Dnia) - POPRAWIONE
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "workout_day_id")
-    private WorkoutDay workoutDay; // Zmieniono z 'WorkoutPlan workoutDayId'
+    private WorkoutDay workoutDay;
 
     // N:1 do Klienta (Wiele Sesji do Jednego Klienta) - POPRAWIONE
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id")
-    private Client client; // Zmieniono z 'client_id'
+    private Client client;
 
     private String notes;
     private LocalDateTime startTime;
@@ -43,6 +43,14 @@ public class Session {
     public void setClient(Client client){
         this.client = client;
         }
+
+    public WorkoutDay getWorkoutDay() {
+        return workoutDay;
+    }
+
+    public void setWorkoutDay(WorkoutDay workoutDay) {
+        this.workoutDay = workoutDay;
+    }
 
 
     public String getNotes() {
@@ -80,6 +88,7 @@ public class Session {
     public Long getId() {
         return id;
     }
+
 
 
     // --- Konstruktor, Gettery i Settery ---

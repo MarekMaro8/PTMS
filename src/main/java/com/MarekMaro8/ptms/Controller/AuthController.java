@@ -14,11 +14,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController // 1. Oznacza, że ta klasa obsługuje żądania HTTP
-@RequestMapping("/api/auth") // 2. Definiuje bazową ścieżkę URL
+@RestController
+@RequestMapping("/api/auth") // Bazowa ścieżka URL dla operacji uwierzytelniania
 public class AuthController {
-
-
     private final ClientService clientService;
     private final TrainerService trainerService;
 
@@ -28,7 +26,7 @@ public class AuthController {
         this.clientService = clientService;
     }
 
-    @PostMapping("/register/client") // 3. Mapuje żądania POST do /api/clients
+    @PostMapping("/client/register") //
     public ResponseEntity<Client> createClient(@Valid @RequestBody Client client) {
         try {
             Client savedClient = clientService.saveClient(client);
@@ -40,10 +38,10 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/login/client")
+    @PostMapping("/client/login")
     public ResponseEntity<Client> loginClient(@RequestBody LoginRequest loginRequest) {
         try {
-            Client client = clientService.login(loginRequest.getEmail(), loginRequest.getPassword());
+            Client client = clientService.loginClient(loginRequest.getEmail(), loginRequest.getPassword());
             return ResponseEntity.ok(client);
         } catch (IllegalArgumentException e) {
             // Jeśli hasło lub email są złe, zwracamy 401 Unauthorized
@@ -52,22 +50,20 @@ public class AuthController {
     }
 
 
-    @PostMapping("/register/trainer") // 3. Mapuje żądania POST do /api/clients
-    public ResponseEntity<Trainer> createTrainer(@Valid @RequestBody Trainer trainer) {
+    @PostMapping("/trainer/register")
+    public ResponseEntity<Trainer> createTrainer(@RequestBody Trainer trainer) {
         try {
             Trainer savedTrainer = trainerService.saveTrainer(trainer);
-            // Zwraca klienta i status 201 Created
             return new ResponseEntity<>(savedTrainer, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
-            // W przypadku, gdy e-mail już istnieje, zwracamy 409 Conflict
             return new ResponseEntity<>(null, HttpStatus.CONFLICT);
         }
     }
 
-    @PostMapping("/login/trainer")
+    @PostMapping("/trainer/login")
     public ResponseEntity<Trainer> loginTrainer(@RequestBody LoginRequest loginRequest) {
         try {
-            Trainer trainer = trainerService.login(loginRequest.getEmail(), loginRequest.getPassword());
+            Trainer trainer = trainerService.loginTrainer(loginRequest.getEmail(), loginRequest.getPassword());
             return ResponseEntity.ok(trainer);
         } catch (IllegalArgumentException e) {
             // Jeśli hasło lub email są złe, zwracamy 401 Unauthorized

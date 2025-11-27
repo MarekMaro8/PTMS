@@ -33,6 +33,9 @@ public class TrainerService {
         if (existingTrainer.isPresent()) {
             throw new IllegalArgumentException("Trainer with email " + trainer.getEmail() + " already exists.");
         }
+        if (trainer.getPassword() == null || trainer.getPassword().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be empty.");
+        }
         String hashedPassword = passwordEncoder.encode(trainer.getPassword());
         trainer.setPassword(hashedPassword);
 
@@ -43,7 +46,7 @@ public class TrainerService {
         return trainerRepository.findByClients_Id(clientId);
     }
 
-    public Trainer login(String email, String password) {
+    public Trainer loginTrainer(String email, String password) {
         Trainer trainer = trainerRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
         if (!passwordEncoder.matches(password, trainer.getPassword())) {

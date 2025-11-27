@@ -33,6 +33,11 @@ public class ClientService {
         if (existingClient.isPresent()) {
             throw new IllegalArgumentException("Client with email " + client.getEmail() + " already exists.");
         }
+
+        if (client.getPassword() == null || client.getPassword().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be empty.");
+        }
+
         String hashedPassword = passwordEncoder.encode(client.getPassword());
         client.setPassword(hashedPassword);
 
@@ -49,7 +54,7 @@ public class ClientService {
         return clientRepository.findById(id);
     }
 
-    public Client login(String email, String password) {
+    public Client loginClient(String email, String password) {
         Client client = clientRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 

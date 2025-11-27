@@ -2,6 +2,7 @@ package com.MarekMaro8.ptms.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Size;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -14,9 +15,12 @@ public class Trainer {
     private Long id;
     private String firstName;
     private String lastName;
+
     @Column(nullable = false, unique = true)
-    private String email;
     @Email(message = "Email should be valid")
+    private String email;
+
+    @Size(min = 8, message = "Password must be at least 8 characters long")
     @Column(nullable = false)
     private String password;
 

@@ -21,28 +21,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Wyłącz zabezpieczenia CSRF, ponieważ używamy JSON API
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // Konfiguracja autoryzacji żądań HTTP
                 .authorizeHttpRequests(authorize -> authorize
-
-                        // ZEZWÓL na żądania POST do /api/clients (rejestracja)
-                        .requestMatchers(HttpMethod.POST, "/api/clients").permitAll()
-
-                        // ZEZWÓL na żądania GET do /api/clients (na razie dla testów)
-                        .requestMatchers(HttpMethod.GET, "/api/clients").permitAll()
-                        // ZEZWÓL na żądania POST do /api/clients/login (logowanie)
-                        .requestMatchers(HttpMethod.POST, "/api/clients/login").permitAll()
-
-                        // WSZYSTKIE inne żądania wymagają pełnej autoryzacji
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/auth/client/register",
+                                "/api/auth/trainer/register",
+                                "/api/auth/client/login",
+                                "/api/auth/trainer/login"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 );
-
-        // Możesz usunąć domyślny formularz logowania, który Spring Security dodaje
-        // http.httpBasic(Customizer.withDefaults()); // Lub użyć httpBasic
-
         return http.build();
     }
 }
-

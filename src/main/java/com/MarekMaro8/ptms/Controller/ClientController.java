@@ -23,12 +23,12 @@ public class ClientController {
 
 
 
-    @GetMapping // 4. Mapuje żądania GET do /api/clients
-    public ResponseEntity<List<Client>> getAllClients() {
-        List<Client> clients = clientService.findAllClients();
-        // Zwraca listę klientów i status 200 OK
-        return ResponseEntity.ok(clients);
-    }
+//    @GetMapping // 4. Mapuje żądania GET do /api/clients
+//    public ResponseEntity<List<Client>> getAllClients() {
+//        List<Client> clients = clientService.findAllClients();
+//        // Zwraca listę klientów i status 200 OK
+//        return ResponseEntity.ok(clients);
+//    }
 
 
 }

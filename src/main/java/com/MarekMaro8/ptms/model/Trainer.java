@@ -2,10 +2,9 @@ package com.MarekMaro8.ptms.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Size;
 
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "trainers")
@@ -24,7 +23,8 @@ public class Trainer {
     @OneToMany(mappedBy = "trainer", cascade = CascadeType.ALL)
     private Set<Client> clients = new HashSet<>();
 
-    public Trainer() {}
+    public Trainer() {
+    }
 
     public Trainer(String firstName, String lastName, String email) {
         this.firstName = firstName;
@@ -36,13 +36,6 @@ public class Trainer {
         this.clients.add(client);   // 1. Dodaj Klienta do listy trenera
         client.setTrainer(this);    // 2. Ustaw Trenera jako właściciela w klasie Klient (USTAWIA Foreign Key!)
     }
-
-    public void removeClient(Client client) {
-        this.clients.remove(client);
-        client.setTrainer(null);    // Usuń referencję (ważne przy usuwaniu)
-    }
-
-
 
     public Long getId() {
         return id;

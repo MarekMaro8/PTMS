@@ -11,8 +11,6 @@ public class PlanExercise {
 
     // Pole przechowujące identyfikator ćwiczenia z ExerciseDB
     @Column(nullable = false)
-    private String externalExerciseId;
-
     private String name;
     private Integer sets;
     private String repsRange;
@@ -26,8 +24,7 @@ public class PlanExercise {
     public PlanExercise() {}
 
     // KONSTRUKTOR INICJALIZUJĄCY: Kluczowe dane + Relacja
-    public PlanExercise(String externalExerciseId, String name, Integer sets, String repsRange, Integer rpe, WorkoutDay workoutDay) {
-        this.externalExerciseId = externalExerciseId;
+    public PlanExercise(String name, Integer sets, String repsRange, Integer rpe, WorkoutDay workoutDay) {
         this.name = name;
         this.sets = sets;
         this.repsRange = repsRange;

@@ -24,10 +24,12 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST,
-                                "/api/auth/client/register",
-                                "/api/auth/trainer/register",
-                                "/api/auth/client/login",
-                                "/api/auth/trainer/login"
+                                "/api/auth/**",
+                                "/api/trainer/**"
+                        ).permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/trainer/**",
+                                "/api/clients"
                         ).permitAll()
                         .anyRequest().authenticated()
                 );

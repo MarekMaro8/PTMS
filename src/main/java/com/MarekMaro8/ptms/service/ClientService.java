@@ -2,7 +2,6 @@ package com.MarekMaro8.ptms.service;
 
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.repository.ClientRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-// SERVICE - warstwa logiki biznesowej dla encji Client
+//SERVICE - warstwa logiki biznesowej dla encji Client
 @Service
 public class ClientService {
     private final ClientRepository clientRepository;
@@ -18,8 +17,6 @@ public class ClientService {
 
     // 1. Wstrzyknięcie Zależności (Dependency Injection)
     // Spring sam dostarczy gotową implementację ClientRepository
-    // Konstruktor z @Autowired - wstrzykuje zależności do klasy ClientService
-    @Autowired
     public ClientService(ClientRepository clientRepository, PasswordEncoder passwordEncoder) {
         this.clientRepository = clientRepository;
         this.passwordEncoder = passwordEncoder;
@@ -47,6 +44,10 @@ public class ClientService {
 
     public List<Client> findAllClients() {
         return clientRepository.findAll();
+    }
+
+    public List<Client> findAllClientsByTrainerId(Long trainerId) {
+        return clientRepository.findAllByTrainerId(trainerId);
     }
 
     public Optional<Client> findClientById(Long id) {

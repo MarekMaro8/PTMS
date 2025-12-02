@@ -1,5 +1,6 @@
 package com.MarekMaro8.ptms.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
@@ -24,6 +25,7 @@ public class Trainer {
     @Column(nullable = false)
     private String password;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "trainer", cascade = CascadeType.ALL)
     private Set<Client> clients = new HashSet<>();
 
@@ -66,9 +68,6 @@ public class Trainer {
         return email;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
 
     public String getPassword() {
         return password;

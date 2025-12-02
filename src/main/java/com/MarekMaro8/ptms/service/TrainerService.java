@@ -83,9 +83,7 @@ public class TrainerService {
     @Transactional
     public Client unassignClient(Long clientId) {
         Client client = clientRepository.findById(clientId).orElseThrow(() -> new IllegalArgumentException("Client not found."));
-
         client.setTrainer(null);
-
         return clientRepository.save(client);
     }
 }

@@ -22,6 +22,4 @@ public interface ClientRepository extends  JpaRepository<Client, Long> { // Long
     // takie jak save, findById, findAll, deleteById itp.
     // Nie musimy ich implementować sami.
 
-
-
 }

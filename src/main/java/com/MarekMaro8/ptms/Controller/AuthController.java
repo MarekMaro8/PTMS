@@ -20,7 +20,6 @@ public class AuthController {
     private final ClientService clientService;
     private final TrainerService trainerService;
 
-    @Autowired
     public AuthController(ClientService clientService, TrainerService trainerService) {
         this.trainerService = trainerService;
         this.clientService = clientService;

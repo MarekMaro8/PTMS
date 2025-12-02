@@ -24,11 +24,18 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST,
-                                "/api/auth/**",
-                                "/api/trainer/**"
+                                "/api/auth//trainer/register",
+                                "/api/auth/client/register",
+                                "/api/auth/trainer/login",
+                                "/api/auth/client/login"
+
+                        ).permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/trainer/{trainerId}/assign/{clientId}",
+                                "/api/trainer/{trainerId}/unassign/{clientId}"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET,
-                                "/api/trainer/**",
+                                "/api/trainer/{trainerId}/clients",
                                 "/api/clients"
                         ).permitAll()
                         .anyRequest().authenticated()

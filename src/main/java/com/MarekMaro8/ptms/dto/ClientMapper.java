@@ -7,8 +7,10 @@ public class ClientMapper {
 
     public ClientDTO toDto(Client client) {
         String trainerName = "Brak";
+        String trainerEmail = "Brak";
         if (client.getTrainer() != null) {
             trainerName = client.getTrainer().getFirstName() + " " + client.getTrainer().getLastName();
+            trainerEmail = client.getTrainer().getEmail();
         }
 
         // Tutaj "rozpakowujemy" encję do bezpiecznego pudełka DTO
@@ -17,7 +19,8 @@ public class ClientMapper {
                 client.getFirstName(),
                 client.getLastName(),
                 client.getEmail(),
-                trainerName
+                trainerName,
+                trainerEmail
         );
     }
 }

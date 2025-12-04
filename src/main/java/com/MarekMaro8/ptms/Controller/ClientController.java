@@ -1,5 +1,6 @@
 package com.MarekMaro8.ptms.Controller;
 
+import com.MarekMaro8.ptms.dto.ClientDTO;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.service.ClientService;
 import org.springframework.http.ResponseEntity;
@@ -24,8 +25,8 @@ public class ClientController {
 
 
     @GetMapping // 4. Mapuje żądania GET do /api/clients
-    public ResponseEntity<List<Client>> getAllClients() {
-        List<Client> clients = clientService.findAllClients();
+    public ResponseEntity<List<ClientDTO>> getAllClients() {
+        List<ClientDTO> clients = clientService.findAllClients();
         // Zwraca listę klientów i status 200 OK
         return ResponseEntity.ok(clients);
     }

@@ -1,6 +1,7 @@
 package com.MarekMaro8.ptms.Controller;
 
 
+import com.MarekMaro8.ptms.dto.ClientDTO;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.service.ClientService;
 import com.MarekMaro8.ptms.service.TrainerService;
@@ -25,8 +26,8 @@ public class TrainerClientController {
 
     // Pobierz wszystkich klientów dla danego trenera :)
     @GetMapping ("/clients") //
-    public ResponseEntity<List<Client>> getAllClientsByTrainerId(@PathVariable Long trainerId) {
-        List<Client> clients = clientService.findAllClientsByTrainerId(trainerId);
+    public ResponseEntity<List<ClientDTO>> getAllClientsByTrainerId(@PathVariable Long trainerId) {
+        List<ClientDTO> clients = clientService.getClientsDtoByTrainerId(trainerId);
         return ResponseEntity.ok(clients);
     }
 

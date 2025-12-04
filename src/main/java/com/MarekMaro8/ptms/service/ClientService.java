@@ -1,6 +1,7 @@
 package com.MarekMaro8.ptms.service;
 
 import com.MarekMaro8.ptms.dto.ClientDTO;
+import com.MarekMaro8.ptms.dto.ClientMapper;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.repository.ClientRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,29 +17,28 @@ import java.util.stream.Collectors;
 public class ClientService {
     private final ClientRepository clientRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ClientMapper clientMapper;
 
     // 1. Wstrzyknięcie Zależności (Dependency Injection)
     // Spring sam dostarczy gotową implementację ClientRepository
-    public ClientService(ClientRepository clientRepository, PasswordEncoder passwordEncoder) {
+    public ClientService(ClientRepository clientRepository, PasswordEncoder passwordEncoder, ClientMapper clientMapper) {
+        this.clientMapper = clientMapper;
         this.clientRepository = clientRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     public List<ClientDTO> getClientsDtoByTrainerId(Long trainerId) {
-        // 1. Pobieramy Encje z bazy (tak jak wcześniej)
-        List<Client> clients = clientRepository.findAllByTrainerId(trainerId);
-
-        // 2. Mapujemy (zamieniamy) listę Encji na listę DTO
-        return clients.stream()
-                .map(client -> new ClientDTO(
-                        client.getId(),
-                        client.getFirstName(),
-                        client.getLastName(),
-                        client.getEmail(),
-                        client.getTrainer() != null ? client.getTrainer().getId() : null
-                ))
+        return clientRepository.findAllByTrainerId(trainerId).stream()
+                .map(clientMapper::toDto)
                 .collect(Collectors.toList());
     }
+
+    public List<ClientDTO> findAllClients() {
+        return clientRepository.findAll().stream()
+                .map(clientMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
 
     @Transactional
     public Client saveClient(Client client) {
@@ -60,18 +60,7 @@ public class ClientService {
         // save - metoda z JpaRepository, która zapisuje obiekt w bazie danych
     }
 
-    public List<Client> findAllClients() {
-        return clientRepository.findAll();
-    }
 
-    public List<Client> findAllClientsByTrainerId(Long trainerId) {
-        return clientRepository.findAllByTrainerId(trainerId);
-    }
-
-    public Optional<Client> findClientById(Long id) {
-        // findById zwraca Optional, aby bezpiecznie obsłużyć brak wyniku
-        return clientRepository.findById(id);
-    }
 
     public Client loginClient(String email, String password) {
         Client client = clientRepository.findByEmail(email)

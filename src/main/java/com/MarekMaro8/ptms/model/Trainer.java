@@ -25,7 +25,6 @@ public class Trainer {
     @Column(nullable = false)
     private String password;
 
-    @JsonIgnore
     @OneToMany(mappedBy = "trainer", cascade = CascadeType.ALL)
     private Set<Client> clients = new HashSet<>();
 

@@ -1,5 +1,6 @@
 package com.MarekMaro8.ptms.service;
 
+import com.MarekMaro8.ptms.dto.ClientDTO;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.repository.ClientRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -8,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 //SERVICE - warstwa logiki biznesowej dla encji Client
 @Service
@@ -20,6 +22,22 @@ public class ClientService {
     public ClientService(ClientRepository clientRepository, PasswordEncoder passwordEncoder) {
         this.clientRepository = clientRepository;
         this.passwordEncoder = passwordEncoder;
+    }
+
+    public List<ClientDTO> getClientsDtoByTrainerId(Long trainerId) {
+        // 1. Pobieramy Encje z bazy (tak jak wcześniej)
+        List<Client> clients = clientRepository.findAllByTrainerId(trainerId);
+
+        // 2. Mapujemy (zamieniamy) listę Encji na listę DTO
+        return clients.stream()
+                .map(client -> new ClientDTO(
+                        client.getId(),
+                        client.getFirstName(),
+                        client.getLastName(),
+                        client.getEmail(),
+                        client.getTrainer() != null ? client.getTrainer().getId() : null
+                ))
+                .collect(Collectors.toList());
     }
 
     @Transactional

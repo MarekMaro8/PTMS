@@ -1,10 +1,10 @@
 package com.MarekMaro8.ptms.Controller;
 
 
+import com.MarekMaro8.ptms.dto.client.ClientDTO;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.service.ClientService;
 import com.MarekMaro8.ptms.service.TrainerService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,18 +25,18 @@ public class TrainerClientController {
 
     // Pobierz wszystkich klientów dla danego trenera :)
     @GetMapping ("/clients") //
-    public ResponseEntity<List<Client>> getAllClientsByTrainerId(@PathVariable Long trainerId) {
-        List<Client> clients = clientService.findAllClientsByTrainerId(trainerId);
+    public ResponseEntity<List<ClientDTO>> getAllClientsByTrainerId(@PathVariable Long trainerId) {
+        List<ClientDTO> clients = clientService.getClientsDtoByTrainerId(trainerId);
         return ResponseEntity.ok(clients);
     }
 
     // Przypisz klienta do trenera
     @PostMapping("/assign/{clientId}")
-    public ResponseEntity<Client> assignClientToTrainer(
+    public ResponseEntity<ClientDTO> assignClientToTrainer(
             @PathVariable Long trainerId,
             @PathVariable Long clientId) {
         try {
-            Client updatedClient = trainerService.assignClient(trainerId, clientId);
+            ClientDTO updatedClient = trainerService.assignClient(trainerId, clientId);
             return ResponseEntity.ok(updatedClient); // 200 OK
         } catch (IllegalArgumentException e) {
             // Rzucone gdy Trener lub Klient nie istnieje

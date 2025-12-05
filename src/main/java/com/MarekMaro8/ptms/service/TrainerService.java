@@ -1,5 +1,10 @@
 package com.MarekMaro8.ptms.service;
 
+import com.MarekMaro8.ptms.dto.client.ClientDTO;
+import com.MarekMaro8.ptms.dto.client.ClientMapper;
+import com.MarekMaro8.ptms.dto.trainer.TrainerDTO;
+import com.MarekMaro8.ptms.dto.trainer.TrainerMapper;
+import com.MarekMaro8.ptms.dto.trainer.TrainerRegistrationDTO;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.model.Trainer;
 import com.MarekMaro8.ptms.repository.ClientRepository;
@@ -10,74 +15,77 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class TrainerService {
     private final TrainerRepository trainerRepository;
     private final PasswordEncoder passwordEncoder;
     private final ClientRepository clientRepository;
+    private final TrainerMapper trainerMapper;
+    private final ClientMapper clientMapper;
 
     @Autowired
-    public TrainerService(TrainerRepository trainerRepository, PasswordEncoder passwordEncoder, ClientRepository clientRepository) {
+    public TrainerService(TrainerRepository trainerRepository,
+                          PasswordEncoder passwordEncoder,
+                          ClientRepository clientRepository,
+                          TrainerMapper trainerMapper,
+                          ClientMapper clientMapper) {
         this.passwordEncoder = passwordEncoder;
         this.trainerRepository = trainerRepository;
         this.clientRepository = clientRepository;
+        this.trainerMapper = trainerMapper;
+        this.clientMapper = clientMapper;
     }
 
     @Transactional
-    public Trainer saveTrainer(Trainer trainer) {
+    public TrainerDTO registerTrainer(TrainerRegistrationDTO trainerRegistrationDTO) {
 
-        Optional<Trainer> existingTrainer = trainerRepository.findByEmail(trainer.getEmail());
-
-        if (existingTrainer.isPresent()) {
-            throw new IllegalArgumentException("Trainer with email " + trainer.getEmail() + " already exists.");
+        if (trainerRepository.findByEmail(trainerRegistrationDTO.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Trainer with email " + trainerRegistrationDTO.getEmail() + " already exists.");
         }
-        if (trainer.getPassword() == null || trainer.getPassword().isEmpty()) {
+        if (trainerRegistrationDTO.getPassword() == null || trainerRegistrationDTO.getPassword().isEmpty()) {
             throw new IllegalArgumentException("Password cannot be empty.");
         }
-        String hashedPassword = passwordEncoder.encode(trainer.getPassword());
-        trainer.setPassword(hashedPassword);
+        Trainer trainerEntity = trainerMapper.toEntity(trainerRegistrationDTO);
+        String hashedPassword = passwordEncoder.encode(trainerEntity.getPassword());
+        trainerEntity.setPassword(hashedPassword);
 
-        return trainerRepository.save(trainer);
+        Trainer savedTrainer = trainerRepository.save(trainerEntity);
+
+        return trainerMapper.toDto(savedTrainer);
     }
 
     public List<Trainer> findTrainersByClientId(Long clientId) {
         return trainerRepository.findByClients_Id(clientId);
     }
 
-    public Trainer loginTrainer(String email, String password) {
+    public TrainerDTO loginTrainer(String email, String password) {
         Trainer trainer = trainerRepository.findByEmail(email).orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
         if (!passwordEncoder.matches(password, trainer.getPassword())) {
             throw new IllegalArgumentException("Invalid email or password");
         }
-        return trainer;
+        return trainerMapper.toDto(trainer);
     }
 
-
-    public Trainer updateTrainer(Long trainerId, Trainer updatedTrainer) {
-        Trainer existingTrainer = trainerRepository.findById(trainerId).orElseThrow(() -> new IllegalArgumentException("Trainer not found."));
-        existingTrainer.setFirstName(updatedTrainer.getFirstName());
-        existingTrainer.setLastName(updatedTrainer.getLastName());
-        return trainerRepository.save(existingTrainer);
-    }
 
     @Transactional
-    public Client assignClient(Long trainerId, Long clientId) {
-        Trainer trainer = trainerRepository.findById(trainerId).orElseThrow(() -> new IllegalArgumentException("Trainer not found."));
-        Client client = clientRepository.findById(clientId).orElseThrow(() -> new IllegalArgumentException("Client not found."));
+    public ClientDTO assignClient(Long trainerId, Long clientId) {
+        Trainer trainer = trainerRepository.findById(trainerId)
+                .orElseThrow(() -> new IllegalArgumentException("Trainer not found."));
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new IllegalArgumentException("Client not found."));
 
-        // Sprawdzenie, czy klient nie ma już innego trenera
         if (client.getTrainer() != null && !client.getTrainer().equals(trainer)) {
             throw new IllegalStateException("Client is already assigned to another trainer.");
         }
 
-        //Musisz wykonać akcję w Javie (synchronizacja obiektu) i akcję w bazie danych (utrwalenie transakcji) – stąd potrzeba obu linii.
-        trainer.addClient(client); // to zapisuje w obiekcie w pamieci
+        // Logika biznesowa
+        trainer.addClient(client);
+        Client savedClient = clientRepository.save(client);
 
-        // Zapis klienta (bo to on jest stroną 'Many' i trzyma FK (klucz obcy))
-        return clientRepository.save(client); //to zapisuje w bazie dancyh
+        // 4. MAPOWANIE NA KONIEC (Entity -> DTO)
+        return clientMapper.toDto(savedClient);
     }
 
     @Transactional

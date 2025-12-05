@@ -23,21 +23,18 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.POST,
-                                "/api/auth//trainer/register",
-                                "/api/auth/client/register",
-                                "/api/auth/trainer/login",
-                                "/api/auth/client/login"
+                        .requestMatchers("/api/auth/**").permitAll()
 
-                        ).permitAll()
                         .requestMatchers(HttpMethod.POST,
-                                "/api/trainer/{trainerId}/assign/{clientId}",
-                                "/api/trainer/{trainerId}/unassign/{clientId}"
-                        ).permitAll()
+                                "/api/trainer/*/clients/**",
+                                "/api/trainer/*/assign/*").permitAll()
+
                         .requestMatchers(HttpMethod.GET,
-                                "/api/trainer/{trainerId}/clients",
-                                "/api/clients"
-                        ).permitAll()
+                                "/api/**").permitAll()
+
+                        .requestMatchers(HttpMethod.DELETE,
+                                "/api/trainer/*/unassign/*").permitAll()
+
                         .anyRequest().authenticated()
                 );
         return http.build();

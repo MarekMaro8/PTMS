@@ -25,7 +25,6 @@ public class Trainer {
     @Column(nullable = false)
     private String password;
 
-    @JsonIgnore
     @OneToMany(mappedBy = "trainer", cascade = CascadeType.ALL)
     private Set<Client> clients = new HashSet<>();
 
@@ -68,6 +67,9 @@ public class Trainer {
         return email;
     }
 
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
     public String getPassword() {
         return password;
@@ -80,6 +82,8 @@ public class Trainer {
     public Set<Client> getClients() {
         return clients;
     }
+
+
 
     // ... (Konstruktory, Gettery i Settery) ...
     // Dodaj Gettery/Settery dla 'clients'

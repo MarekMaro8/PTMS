@@ -1,5 +1,6 @@
 package com.MarekMaro8.ptms.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
@@ -18,6 +19,7 @@ public class Client {
     // Relacja N:1 (Wiele Klientów ma Jednego Trenera)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trainer_id")
+//    @JsonIgnoreProperties({"clients", "hibernateLazyInitializer", "handler"})
     private Trainer trainer;
 
     // Relacja 1:N (Jeden Klient ma Wiele Planów)

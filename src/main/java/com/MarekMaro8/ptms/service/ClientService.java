@@ -1,7 +1,8 @@
 package com.MarekMaro8.ptms.service;
 
-import com.MarekMaro8.ptms.dto.ClientDTO;
-import com.MarekMaro8.ptms.dto.ClientMapper;
+import com.MarekMaro8.ptms.dto.client.ClientDTO;
+import com.MarekMaro8.ptms.dto.client.ClientMapper;
+import com.MarekMaro8.ptms.dto.client.ClientRegistrationDTO;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.repository.ClientRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,53 +40,37 @@ public class ClientService {
                 .collect(Collectors.toList());
     }
 
-
     @Transactional
-    public Client saveClient(Client client) {
-
-        Optional<Client> existingClient = clientRepository.findByEmail(client.getEmail());
-
-        if (existingClient.isPresent()) {
-            throw new IllegalArgumentException("Client with email " + client.getEmail() + " already exists.");
+    public ClientDTO registerClient(ClientRegistrationDTO clientRegistrationDTO) {
+        //Sprawdzamy czy email wolny
+        if (clientRepository.findByEmail(clientRegistrationDTO.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Client with email " + clientRegistrationDTO.getEmail() + " already exists.");
         }
+        //Mapowanie (Formularz -> Encja)
+        Client clientEntity = clientMapper.toEntity(clientRegistrationDTO);
 
-        if (client.getPassword() == null || client.getPassword().isEmpty()) {
-            throw new IllegalArgumentException("Password cannot be empty.");
-        }
+        // Pobieramy surowe hasło z encji (które włożył tam mapper), szyfrujemy i nadpisujemy
+        String hashedPassword = passwordEncoder.encode(clientEntity.getPassword());
+        clientEntity.setPassword(hashedPassword);
 
-        String hashedPassword = passwordEncoder.encode(client.getPassword());
-        client.setPassword(hashedPassword);
+        //Zapis do bazy
+        Client savedClient = clientRepository.save(clientEntity);
 
-        return clientRepository.save(client);
-        // save - metoda z JpaRepository, która zapisuje obiekt w bazie danych
+        //Mapowanie zwrotne (Encja -> Wizytówka)
+        // Zwracamy obiekt bez hasła!
+        return clientMapper.toDto(savedClient);
     }
 
 
 
-    public Client loginClient(String email, String password) {
+    public ClientDTO loginClient(String email, String password) {
         Client client = clientRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
         if (!passwordEncoder.matches(password, client.getPassword())) {
             throw new IllegalArgumentException("Invalid email or password");
         }
-        return client;
+        return clientMapper.toDto(client);
     }
 
-
-    public Client updateClient(Long id, Client clientDetails) {
-        Client client = clientRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Client with ID " + id + " not found."));
-
-        // Zaktualizuj pola
-        client.setFirstName(clientDetails.getFirstName());
-        client.setLastName(clientDetails.getLastName());
-
-        // Zapisz zaktualizowany obiekt (Hibernate wykona UPDATE SQL)
-        return clientRepository.save(client);
-    }
-
-    public void deleteClient(Long id) {
-        clientRepository.deleteById(id);
-    }
 }

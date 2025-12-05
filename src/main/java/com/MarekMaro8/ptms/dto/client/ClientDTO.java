@@ -1,4 +1,4 @@
-package com.MarekMaro8.ptms.dto;
+package com.MarekMaro8.ptms.dto.client;
 
 // DTO - Prosta klasa do przesyłania danych.
 // Nie ma @Entity, nie ma logiki, nie ma haseł.

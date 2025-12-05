@@ -1,7 +1,6 @@
 package com.MarekMaro8.ptms.Controller;
 
-import com.MarekMaro8.ptms.dto.ClientDTO;
-import com.MarekMaro8.ptms.model.Client;
+import com.MarekMaro8.ptms.dto.client.ClientDTO;
 import com.MarekMaro8.ptms.service.ClientService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

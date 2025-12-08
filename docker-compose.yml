@@ -5,7 +5,7 @@ version: '3.8'
 services:
   # 1. SERWIS BAZY DANYCH (PostgreSQL)
   db:
-    image: postgres:15-alpine # Stabilny, lekki obraz DB
+    image: postgres:18-alpine # Stabilny, lekki obraz DB
     container_name: ptms_db
     restart: always
     environment: # Zmienne konfiguracyjne dla obrazu Postgresa
@@ -16,6 +16,7 @@ services:
       - "5432:5432" # Opcjonalne, ale przydatne do podglądu bazy
     volumes:
       - postgres_data:/var/lib/postgresql/data # Trwałość danych (nie stracisz ich po restarcie)
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck: # Sprawdzenie gotowości DB
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s

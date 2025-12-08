@@ -9,10 +9,16 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
-@EnableWebSecurity // Włącza wsparcie dla bezpieczeństwa Spring
+@EnableWebSecurity
 public class SecurityConfig {
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -21,22 +27,45 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // 1. NAPRAWA CORS (Kluczowe dla Reacta)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
+                        // 2. NAPRAWA ŚCIEŻEK (używamy ** zamiast *)
+                        // Pozwala na dostęp do /api/auth/client/login, /api/auth/trainer/register itp.
                         .requestMatchers("/api/auth/**").permitAll()
 
+                        // Poprawione literówki (usunięte podwójne ukośniki //) i dodane **
                         .requestMatchers(HttpMethod.POST,
                                 "/api/trainer/*/clients/**",
-                                "/api/trainer/*/assign/*").permitAll()
+                                "/api/trainer/*/assign/**").permitAll()
 
                         .requestMatchers(HttpMethod.GET,
                                 "/api/**").permitAll()
 
                         .requestMatchers(HttpMethod.DELETE,
-                                "/api/trainer/*/unassign/*").permitAll()
+                                "/api/trainer/*/unassign/**").permitAll()
 
                         .anyRequest().authenticated()
                 );
         return http.build();
+    }
+
+    // 3. KONFIGURACJA CORS
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // Zmień port, jeśli Twój React działa na innym niż 3000
+        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }

@@ -32,7 +32,7 @@ services:
       - "8080:8080"
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_healthy 
     environment:
       # Teraz te nazwy (klucze po lewej) idealnie pasują do tego, co wpisaliśmy w ${...} w properties
       DB_URL: jdbc:postgresql://db:5432/ptms_db

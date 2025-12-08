@@ -25,18 +25,17 @@ services:
   # 2. SERWIS BACKENDU (PTMS - Aplikacja Spring Boot)
   backend:
     build:
-      context: . # Użyj bieżącego katalogu dla budowania
+      context: .
       dockerfile: Dockerfile
     container_name: ptms_backend
     ports:
-      - "8080:8080" # Dostęp do API z zewnątrz (http://localhost:8080)
+      - "8080:8080"
     depends_on:
       db:
-        condition: service_healthy # Backend czeka, aż DB będzie zdrowa
-
+        condition: service_healthy
     environment:
-      # 1. KONFIGURACJA POŁĄCZENIA - Wymusza adres hosta na 'db'
-      DB_URL: jdbc:postgresql://db:5432/ptms_db  # HOST musi być "db"!
+      # Teraz te nazwy (klucze po lewej) idealnie pasują do tego, co wpisaliśmy w ${...} w properties
+      DB_URL: jdbc:postgresql://db:5432/ptms_db
       DB_USERNAME: postgres
       DB_PASSWORD: marek123
 

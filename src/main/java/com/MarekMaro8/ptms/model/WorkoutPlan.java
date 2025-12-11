@@ -32,6 +32,9 @@ public class WorkoutPlan {
         day.setWorkoutPlan(this);
     }
 
+    public Set<WorkoutDay> getWorkoutDays() {
+        return workoutDays;
+    }
 
     public void setClient(Client client) {
         this.client = client;

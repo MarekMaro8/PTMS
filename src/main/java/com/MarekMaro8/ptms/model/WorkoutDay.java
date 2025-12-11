@@ -48,6 +48,10 @@ public class WorkoutDay {
         this.focus = focus;
     }
 
+    public Set<PlanExercise> getPlanExercises() {
+        return planExercises;
+    }
+
     public String getDayName() {
         return dayName;
     }

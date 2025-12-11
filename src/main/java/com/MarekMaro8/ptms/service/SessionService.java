@@ -1,5 +1,8 @@
 package com.MarekMaro8.ptms.service;
 
+import com.MarekMaro8.ptms.dto.session.SessionDTO;
+import com.MarekMaro8.ptms.dto.session.SessionMapper;
+import com.MarekMaro8.ptms.dto.session.SessionStartDTO;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.model.Session;
 import com.MarekMaro8.ptms.model.WorkoutDay;
@@ -18,42 +21,45 @@ public class SessionService {
     private final SessionRepository sessionRepository;
     private final ClientRepository clientRepository;
     private final WorkoutDayRepository workoutDayRepository;
+    private final SessionMapper sessionMapper;
 
-    public SessionService(SessionRepository sessionRepository, ClientRepository clientRepository, WorkoutDayRepository workoutDayRepository) {
+    public SessionService(SessionRepository sessionRepository, ClientRepository clientRepository, WorkoutDayRepository workoutDayRepository, SessionMapper sessionMapper) {
         this.sessionRepository = sessionRepository;
         this.clientRepository = clientRepository;
         this.workoutDayRepository = workoutDayRepository;
+        this.sessionMapper = sessionMapper;
     }
 
     @Transactional
-    public Session startSession(Long clientId, Long workoutDayId, Session sessionData) {
-        // 1. POBRANIE: Upewnij się, że Klient i Szablon Dnia istnieją
+    // 2. Zmieniamy typ zwracany na SessionDTO
+    public SessionDTO startSession(Long clientId, Long workoutDayId, SessionStartDTO requestDto) {
+
         Client client = clientRepository.findById(clientId)
                 .orElseThrow(() -> new IllegalArgumentException("Client not found."));
         WorkoutDay workoutDay = workoutDayRepository.findById(workoutDayId)
                 .orElseThrow(() -> new IllegalArgumentException("Workout Day template not found."));
 
-
-        if (!workoutDay.getWorkoutPlan().getIsActive() || workoutDay.getWorkoutPlan() == null) {
-            throw new IllegalStateException("Cannot start session. The workout day belongs to an inactive or non-existent plan. Please assign an active plan first.");
+        WorkoutPlan plan = workoutDay.getWorkoutPlan();
+        if (plan == null || !plan.getIsActive()) {
+            throw new IllegalStateException("Cannot start session. The workout day belongs to an inactive plan.");
         }
 
-
-        // 2. LOGIKA: Ustawienie startowych danych sesji
+        // --- Logika (bez zmian) ---
         Session newSession = new Session();
         newSession.setStartTime(LocalDateTime.now());
-        newSession.setNotes(sessionData.getNotes());
+        newSession.setNotes(requestDto.getNotes());
 
-        // 3. SYNCHRONIZACJA: Użyj Helper Methods, by synchronizować relacje 1:N
-        client.addSession(newSession);       // Klient ma nową sesję w historii
-        workoutDay.addSession(newSession);   // Szablon dnia ma nową sesję w historii
+        client.addSession(newSession);
+        workoutDay.addSession(newSession);
 
-        // 4. ZAPIS: Sesja jest właścicielem kluczy obcych FK
-        return sessionRepository.save(newSession);
+        // 3. ZAPIS I MAPOWANIE NA WYJŚCIE
+        Session savedSession = sessionRepository.save(newSession);
+
+        // Tutaj używamy metody, o którą pytałeś!
+        return sessionMapper.toDto(savedSession);
     }
-    
-    @Transactional
-    public Session completeSession(Long sessionId) {
+
+    public SessionDTO completeSession(Long sessionId) {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found."));
 
@@ -64,6 +70,9 @@ public class SessionService {
         session.setEndTime(LocalDateTime.now());
         session.setCompleted(true);
 
-        return sessionRepository.save(session);
+        Session savedSession = sessionRepository.save(session);
+
+        // I tutaj też zwracamy bezpieczne DTO
+        return sessionMapper.toDto(savedSession);
     }
 }

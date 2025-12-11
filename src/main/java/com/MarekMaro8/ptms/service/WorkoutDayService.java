@@ -46,9 +46,6 @@ public class WorkoutDayService {
         return savedDay;
     }
 
-    /**
-     * Tworzy instrukcję ćwiczenia (PlanExercise).
-     */
     @Transactional
     public PlanExercise addExerciseInstruction(Long dayId, PlanExercise exerciseData) {
 

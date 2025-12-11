@@ -3,6 +3,7 @@ package com.MarekMaro8.ptms.service;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.model.Session;
 import com.MarekMaro8.ptms.model.WorkoutDay;
+import com.MarekMaro8.ptms.model.WorkoutPlan;
 import com.MarekMaro8.ptms.repository.ClientRepository;
 import com.MarekMaro8.ptms.repository.SessionRepository;
 import com.MarekMaro8.ptms.repository.WorkoutDayRepository;
@@ -31,6 +32,12 @@ public class SessionService {
                 .orElseThrow(() -> new IllegalArgumentException("Client not found."));
         WorkoutDay workoutDay = workoutDayRepository.findById(workoutDayId)
                 .orElseThrow(() -> new IllegalArgumentException("Workout Day template not found."));
+
+
+        if (!workoutDay.getWorkoutPlan().getIsActive() || workoutDay.getWorkoutPlan() == null) {
+            throw new IllegalStateException("Cannot start session. The workout day belongs to an inactive or non-existent plan. Please assign an active plan first.");
+        }
+
 
         // 2. LOGIKA: Ustawienie startowych danych sesji
         Session newSession = new Session();

@@ -40,7 +40,7 @@ public class TrainerService {
     @Transactional
     public TrainerDTO registerTrainer(TrainerRegistrationDTO trainerRegistrationDTO) {
 
-        if (trainerRepository.findByEmail(trainerRegistrationDTO.getEmail()).isPresent()) {
+        if (trainerRepository.findByEmail(trainerRegistrationDTO.getEmail()).isPresent() || clientRepository.findByEmail(trainerRegistrationDTO.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Trainer with email " + trainerRegistrationDTO.getEmail() + " already exists.");
         }
         if (trainerRegistrationDTO.getPassword() == null || trainerRegistrationDTO.getPassword().isEmpty()) {

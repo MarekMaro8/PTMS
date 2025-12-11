@@ -7,6 +7,7 @@ import com.MarekMaro8.ptms.repository.WorkoutPlanRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -48,5 +49,9 @@ public class WorkoutPlanService {
     public WorkoutPlan getActivePlan(Long clientId) {
         return workoutPlanRepository.findByClientIdAndIsActiveTrue(clientId)
                 .orElseThrow(() -> new IllegalArgumentException("No active plan found for client."));
+    }
+
+    public List<WorkoutPlan> getAllPlansOfClient(Long clientId) {
+    return workoutPlanRepository.findAllByClientId(clientId);
     }
 }

@@ -46,7 +46,6 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.DELETE,
                                 "/api/trainer/*/unassign/**").permitAll()
-//test
                         .anyRequest().authenticated()
                 );
         return http.build();

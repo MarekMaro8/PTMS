@@ -5,6 +5,7 @@ import com.MarekMaro8.ptms.dto.client.ClientMapper;
 import com.MarekMaro8.ptms.dto.client.ClientRegistrationDTO;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.repository.ClientRepository;
+import com.MarekMaro8.ptms.repository.TrainerRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,13 +20,15 @@ public class ClientService {
     private final ClientRepository clientRepository;
     private final PasswordEncoder passwordEncoder;
     private final ClientMapper clientMapper;
+    private final TrainerRepository trainerRepository;
 
     // 1. Wstrzyknięcie Zależności (Dependency Injection)
     // Spring sam dostarczy gotową implementację ClientRepository
-    public ClientService(ClientRepository clientRepository, PasswordEncoder passwordEncoder, ClientMapper clientMapper) {
+    public ClientService(ClientRepository clientRepository, PasswordEncoder passwordEncoder, ClientMapper clientMapper, TrainerRepository trainerRepository) {
         this.clientMapper = clientMapper;
         this.clientRepository = clientRepository;
         this.passwordEncoder = passwordEncoder;
+        this.trainerRepository = trainerRepository;
     }
 
     public List<ClientDTO> getClientsDtoByTrainerId(Long trainerId) {
@@ -43,7 +46,7 @@ public class ClientService {
     @Transactional
     public ClientDTO registerClient(ClientRegistrationDTO clientRegistrationDTO) {
         //Sprawdzamy czy email wolny
-        if (clientRepository.findByEmail(clientRegistrationDTO.getEmail()).isPresent()) {
+        if (clientRepository.findByEmail(clientRegistrationDTO.getEmail()).isPresent() || trainerRepository.findByEmail(clientRegistrationDTO.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Client with email " + clientRegistrationDTO.getEmail() + " already exists.");
         }
         //Mapowanie (Formularz -> Encja)

@@ -1,5 +1,7 @@
 package com.MarekMaro8.ptms.Controller;
 
+import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanCreationDTO;
+import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanDTO;
 import com.MarekMaro8.ptms.model.WorkoutPlan;
 import com.MarekMaro8.ptms.repository.WorkoutPlanRepository;
 import com.MarekMaro8.ptms.service.WorkoutPlanService;
@@ -20,22 +22,22 @@ public class WorkoutPlanController {
     }
 
     @GetMapping("/client/{clientId}/active")
-    public ResponseEntity<WorkoutPlan> getActivePlanO(@PathVariable Long clientId) {
-        WorkoutPlan workoutPlan = workoutPlanService.getActivePlan(clientId);
+    public ResponseEntity<WorkoutPlanDTO> getActivePlanO(@PathVariable Long clientId) {
+        WorkoutPlanDTO workoutPlan = workoutPlanService.getActivePlan(clientId);
         return ResponseEntity.ok(workoutPlan);
     }
 
     @PostMapping("/client/{clientId}")
-    public ResponseEntity<WorkoutPlan> createNewWorkoutPlan(
+    public ResponseEntity<WorkoutPlanDTO> createNewWorkoutPlan(
             @PathVariable Long clientId,
-            @RequestBody WorkoutPlan newWorkoutPlan) {
-        WorkoutPlan createdPlan = workoutPlanService.createNewWorkoutPlan(clientId, newWorkoutPlan);
+            @RequestBody WorkoutPlanCreationDTO newWorkoutPlan) {
+        WorkoutPlanDTO createdPlan = workoutPlanService.createNewWorkoutPlan(clientId, newWorkoutPlan);
         return ResponseEntity.ok(createdPlan);
     }
 
     @GetMapping("/client/{clientId}/all")
-    public ResponseEntity<List<WorkoutPlan>> getAllPlansOfClient(@PathVariable Long clientId) {
-        List<WorkoutPlan> plans = workoutPlanService.getAllPlansOfClient(clientId);
+    public ResponseEntity<List<WorkoutPlanDTO>> getAllPlansOfClient(@PathVariable Long clientId) {
+        List<WorkoutPlanDTO> plans = workoutPlanService.getAllPlansForClient(clientId);
         return ResponseEntity.ok(plans);
     }
 }

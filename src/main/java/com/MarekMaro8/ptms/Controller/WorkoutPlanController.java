@@ -2,8 +2,6 @@ package com.MarekMaro8.ptms.Controller;
 
 import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanCreationDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanDTO;
-import com.MarekMaro8.ptms.model.WorkoutPlan;
-import com.MarekMaro8.ptms.repository.WorkoutPlanRepository;
 import com.MarekMaro8.ptms.service.WorkoutPlanService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +25,7 @@ public class WorkoutPlanController {
         WorkoutPlanDTO workoutPlan = workoutPlanService.getActivePlan(clientId);
         return ResponseEntity.ok(workoutPlan);
     }
+
     // Stworzenie nowego planu treningowego dla klienta
     @PostMapping("/client/{clientId}/new")
     public ResponseEntity<WorkoutPlanDTO> createNewWorkoutPlan(

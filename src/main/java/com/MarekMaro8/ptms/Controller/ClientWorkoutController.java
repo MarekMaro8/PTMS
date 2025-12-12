@@ -20,13 +20,7 @@ public class ClientWorkoutController {
         this.sessionService = sessionService;
     }
 
-    /**
-     * 1. START TRENINGU
-     * URL: POST /api/clients/{clientId}/workouts/start/{workoutDayId}
-     * * Dlaczego tak?
-     * Klient wchodzi w konkretny Dzień Treningowy (np. "Dzień A - Klatka") i klika START.
-     * Przekazujemy SessionStartDTO, bo tam mogą być wstępne notatki (np. "Czuję się dzisiaj słabo").
-     */
+    //Rozpoczecie sesji treingowej
     @PostMapping("/start/{workoutDayId}")
     public ResponseEntity<SessionDTO> startWorkout(
             @PathVariable Long clientId,
@@ -40,13 +34,7 @@ public class ClientWorkoutController {
         return ResponseEntity.status(HttpStatus.CREATED).body(newSession);
     }
 
-    /**
-     * 2. ZAKOŃCZENIE TRENINGU
-     * URL: POST /api/clients/{clientId}/workouts/{sessionId}/finish
-     * * Dlaczego POST a nie PUT?
-     * Bo "zakończenie" to akcja biznesowa, a nie tylko aktualizacja pól.
-     * Dodatkowo: clientId w URL jest pod przyszłe zabezpieczenia (Middleware).
-     */
+    // Zakończenie sesji treningowej
     @PostMapping("/{sessionId}/finish")
     public ResponseEntity<SessionDTO> finishWorkout(
             @PathVariable Long clientId,
@@ -57,8 +45,7 @@ public class ClientWorkoutController {
         return ResponseEntity.ok(completedSession);
     }
 
-
-    //toDo mozliwosc dopisania notatek na koniec treningu :)
+    // Aktualizacja notatek do sesji treningowej PATCH - często używane do częściowych aktualizacji zasobów
     @PatchMapping("/{sessionId}/notes")
     public ResponseEntity<Void> updateNotes(
             @PathVariable Long clientId,

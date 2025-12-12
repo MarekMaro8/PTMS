@@ -68,7 +68,7 @@ public class WorkoutPlanService {
     public WorkoutPlanDTO activatePlan(Long planId, Long trainerId) {
         WorkoutPlan planToActivate = workoutPlanRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Workout plan not found."));
-        if (planToActivate.getClient().getTrainer().getId().equals(trainerId)) {
+        if (!planToActivate.getClient().getTrainer().getId().equals(trainerId)) {
             throw new IllegalArgumentException("Trainer does not have permission to activate this plan.");
         }
 

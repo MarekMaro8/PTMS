@@ -59,12 +59,15 @@ public class SessionService {
         return sessionMapper.toDto(savedSession);
     }
 
-    public SessionDTO completeSession(Long sessionId) {
+    public SessionDTO completeSession(Long sessionId, Long clientId) {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found."));
 
         if (session.isCompleted()) {
             throw new IllegalStateException("Session is already completed.");
+        }
+        if(!session.getClient().getId().equals(clientId)) {
+            throw new IllegalArgumentException("Session does not belong to the specified client.");
         }
 
         session.setEndTime(LocalDateTime.now());

@@ -51,6 +51,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/workout-plans/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/workout-plans/**").permitAll()
 
+
+
                         .anyRequest().authenticated()
                 );
         return http.build();

@@ -24,7 +24,13 @@ public class Session {
     private String notes;
     private LocalDateTime startTime;
     private LocalDateTime endTime; // Dodano, żeby liczyć czas trwania
-    private boolean completed = false; // Ustawiono wartość domyślną
+    private boolean completed = false;// Ustawiono wartość domyślną
+
+    //Wellness metryki opcjonalne dla sesji - mogą być null
+    private Integer energyLevel;
+    private Integer sleepQuality;
+    private Integer stressLevel;
+    private Double bodyWeight;
 
     public Session() {
     }
@@ -89,6 +95,37 @@ public class Session {
         return id;
     }
 
+    public Integer getEnergyLevel() {
+        return energyLevel;
+    }
+
+    public void setEnergyLevel(Integer energyLevel) {
+        this.energyLevel = energyLevel;
+    }
+
+    public Integer getSleepQuality() {
+        return sleepQuality;
+    }
+
+    public void setSleepQuality(Integer sleepQuality) {
+        this.sleepQuality = sleepQuality;
+    }
+
+    public Integer getStressLevel() {
+        return stressLevel;
+    }
+
+    public void setStressLevel(Integer stressLevel) {
+        this.stressLevel = stressLevel;
+    }
+
+    public Double getBodyWeight() {
+        return bodyWeight;
+    }
+
+    public void setBodyWeight(Double bodyWeight) {
+        this.bodyWeight = bodyWeight;
+    }
 
 
     // --- Konstruktor, Gettery i Settery ---

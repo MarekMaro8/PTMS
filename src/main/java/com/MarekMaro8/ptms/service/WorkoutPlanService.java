@@ -27,7 +27,18 @@ public class WorkoutPlanService {
         this.workoutPlanMapper = workoutPlanMapper;
     }
 
-    private void deactivateWorkoutPlan(Long clientId) {
+
+    private boolean isWorkoutPlanReady(WorkoutPlanCreationDTO creationDto) {
+        if (creationDto.getWorkoutDays() == null || creationDto.getWorkoutDays().isEmpty()) {
+            return false;
+        }
+        // 2. Przynajmniej jeden dzień musi mieć ćwiczenia
+        // Używamy strumieni (Streams) żeby przeszukać listę
+        return creationDto.getWorkoutDays().stream()
+                .anyMatch(day -> day.getExercises() != null && !day.getExercises().isEmpty());
+    }
+
+    private void deactivateCurrentWorkoutPlan(Long clientId) {
         Optional<WorkoutPlan> oldWorkoutPlan = workoutPlanRepository.findByClientIdAndIsActiveTrue(clientId);
         oldWorkoutPlan.ifPresent(plan -> {
             plan.setIsActive(false);
@@ -43,15 +54,30 @@ public class WorkoutPlanService {
 
         WorkoutPlan newWorkoutPlan = workoutPlanMapper.toEntity(creationDto);
 
-        deactivateWorkoutPlan(clientId);
+        if (isWorkoutPlanReady(creationDto)) {
+            deactivateCurrentWorkoutPlan(clientId);
+            newWorkoutPlan.setIsActive(true);
+        }
 
         client.addWorkoutPlan(newWorkoutPlan); // Ustawia relację client <-> plan
-        newWorkoutPlan.setIsActive(true);      // Nowy plan jest domyślnie aktywny
-
         WorkoutPlan savedPlan = workoutPlanRepository.save(newWorkoutPlan);
-
         return workoutPlanMapper.toDto(savedPlan);
     }
+
+    @Transactional
+    public WorkoutPlanDTO activatePlan(Long planId, Long trainerId) {
+        WorkoutPlan planToActivate = workoutPlanRepository.findById(planId)
+                .orElseThrow(() -> new IllegalArgumentException("Workout plan not found."));
+        if (!planToActivate.getClient().getTrainer().getId().equals(trainerId)) {
+            throw new IllegalArgumentException("Trainer does not have permission to activate this plan.");
+        }
+
+        deactivateCurrentWorkoutPlan(planToActivate.getClient().getId());
+        planToActivate.setIsActive(true);
+        workoutPlanRepository.save(planToActivate);
+        return workoutPlanMapper.toDto(planToActivate);
+    }
+
 
     @Transactional
     public WorkoutPlanDTO getActivePlan(Long clientId) {

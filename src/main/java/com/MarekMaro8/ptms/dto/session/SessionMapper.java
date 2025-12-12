@@ -13,12 +13,11 @@ public class SessionMapper {
             return null;
         }
 
-        // 1. Bezpieczne pobranie metadanych Klienta
+
         Client client = session.getClient();
         Long clientId = (client != null) ? client.getId() : null;
         String clientFullName = (client != null) ? client.getFirstName() + " " + client.getLastName() : "Brak Klienta";
 
-        // 2. Bezpieczne pobranie metadanych Dnia Treningowego
         WorkoutDay workoutDay = session.getWorkoutDay();
         Long dayId = (workoutDay != null) ? workoutDay.getId() : null;
         String dayName = (workoutDay != null) ? workoutDay.getDayName() : "Brak Dnia";
@@ -35,8 +34,11 @@ public class SessionMapper {
                 clientFullName,
                 dayId,
                 dayName,
-                focus
+                focus,
+                session.getEnergyLevel(),
+                session.getSleepQuality(),
+                session.getStressLevel(),
+                session.getBodyWeight()
         );
     }
-
 }

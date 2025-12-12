@@ -1,6 +1,7 @@
 package com.MarekMaro8.ptms.Controller;
 
 import com.MarekMaro8.ptms.dto.session.SessionDTO;
+import com.MarekMaro8.ptms.dto.session.SessionNotesDTO;
 import com.MarekMaro8.ptms.dto.session.SessionStartDTO;
 import com.MarekMaro8.ptms.service.SessionService;
 import org.springframework.http.HttpStatus;
@@ -58,4 +59,13 @@ public class ClientWorkoutController {
 
 
     //toDo mozliwosc dopisania notatek na koniec treningu :)
+    @PatchMapping("/{sessionId}/notes")
+    public ResponseEntity<Void> updateNotes(
+            @PathVariable Long clientId,
+            @PathVariable Long sessionId,
+            @RequestBody SessionNotesDTO notesDto) { // Tu używamy dedykowanego DTO
+
+        sessionService.updateSessionNotes(sessionId, clientId, notesDto.getNotes());
+        return ResponseEntity.ok().build();
+    }
 }

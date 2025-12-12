@@ -28,7 +28,7 @@ public class WorkoutPlanController {
         return ResponseEntity.ok(workoutPlan);
     }
     // Stworzenie nowego planu treningowego dla klienta
-    @PostMapping("/client/{clientId}")
+    @PostMapping("/client/{clientId}/new")
     public ResponseEntity<WorkoutPlanDTO> createNewWorkoutPlan(
             @PathVariable Long clientId,
             @RequestBody WorkoutPlanCreationDTO newWorkoutPlan) {

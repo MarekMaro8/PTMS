@@ -48,6 +48,10 @@ public class SessionService {
         Session newSession = new Session();
         newSession.setStartTime(LocalDateTime.now());
         newSession.setNotes(requestDto.getNotes());
+        newSession.setEnergyLevel(requestDto.getEnergyLevel());
+        newSession.setSleepQuality(requestDto.getSleepQuality());
+        newSession.setStressLevel(requestDto.getStressLevel());
+        newSession.setBodyWeight(requestDto.getBodyWeight());
 
         client.addSession(newSession);
         workoutDay.addSession(newSession);
@@ -77,5 +81,26 @@ public class SessionService {
 
         // I tutaj też zwracamy bezpieczne DTO
         return sessionMapper.toDto(savedSession);
+    }
+
+    @Transactional
+    public void updateSessionNotes(Long sessionId, Long clientId, String newNotes) {
+        // 1. Pobieramy sesję
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Session not found with id: " + sessionId));
+
+        if (!session.getClient().getId().equals(clientId)) {
+            throw new SecurityException("Unauthorized access to session.");
+        }
+
+        // 3. Walidacja Logiczna (Business Logic)
+        // Jeśli sesja jest zakończona, nie pozwalamy na edycję notatek
+        if (session.isCompleted()) {
+            throw new IllegalStateException("Cannot update notes. Session is already completed.");
+        }
+
+        session.setNotes(newNotes);
+
+        sessionRepository.save(session);
     }
 }

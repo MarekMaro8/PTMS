@@ -9,18 +9,23 @@ public class SessionDTO {
     private final boolean completed;
     private final String notes;
 
-    // Metadane Klienta
+    // Metadane Klienta i Planu
     private final Long clientId;
     private final String clientFullName;
-
-    // Metadane Dnia Treningowego
     private final Long workoutDayId;
     private final String workoutDayName;
     private final String workoutDayFocus;
 
+    // --- NOWE POLA (Wellness) ---
+    private final Integer energyLevel;
+    private final Integer sleepQuality;
+    private final Integer stressLevel;
+    private final Double bodyWeight;
 
+    // Konstruktor musi przyjąć WSZYSTKIE parametry (stare + nowe)
     public SessionDTO(Long id, LocalDateTime startTime, LocalDateTime endTime, boolean completed, String notes,
-                      Long clientId, String clientFullName, Long workoutDayId, String workoutDayName, String workoutDayFocus) {
+                      Long clientId, String clientFullName, Long workoutDayId, String workoutDayName, String workoutDayFocus,
+                      Integer energyLevel, Integer sleepQuality, Integer stressLevel, Double bodyWeight) {
         this.id = id;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -31,9 +36,13 @@ public class SessionDTO {
         this.workoutDayId = workoutDayId;
         this.workoutDayName = workoutDayName;
         this.workoutDayFocus = workoutDayFocus;
+        this.energyLevel = energyLevel;
+        this.sleepQuality = sleepQuality;
+        this.stressLevel = stressLevel;
+        this.bodyWeight = bodyWeight;
     }
 
-    // Gettery
+    // --- GETTERY ---
     public Long getId() { return id; }
     public LocalDateTime getStartTime() { return startTime; }
     public LocalDateTime getEndTime() { return endTime; }
@@ -44,4 +53,9 @@ public class SessionDTO {
     public Long getWorkoutDayId() { return workoutDayId; }
     public String getWorkoutDayName() { return workoutDayName; }
     public String getWorkoutDayFocus() { return workoutDayFocus; }
+
+    public Integer getEnergyLevel() { return energyLevel; }
+    public Integer getSleepQuality() { return sleepQuality; }
+    public Integer getStressLevel() { return stressLevel; }
+    public Double getBodyWeight() { return bodyWeight; }
 }

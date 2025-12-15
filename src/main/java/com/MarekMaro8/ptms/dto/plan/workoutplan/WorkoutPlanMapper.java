@@ -47,8 +47,8 @@ public class WorkoutPlanMapper {
         );
     }
 
-    // Metoda pomocnicza: Dzień Entity -> Dzień DTO
-    private WorkoutDayDTO toWorkoutDayDto(WorkoutDay day) {
+    // Metoda pomocnicza: Dzień Entity -> Dzień DTO ALE przyda sie tez w workoutday service :)
+    public WorkoutDayDTO toWorkoutDayDto(WorkoutDay day) {
         // Mapowanie ćwiczeń wewnątrz dnia
         List<PlanExerciseDTO> exercisesDto = new ArrayList<>();
         if (day.getPlanExercises() != null) {
@@ -66,7 +66,7 @@ public class WorkoutPlanMapper {
     }
 
     // Metoda pomocnicza: Ćwiczenie Entity -> Ćwiczenie DTO
-    private PlanExerciseDTO toPlanExerciseDto(PlanExercise exercise) {
+    public PlanExerciseDTO toPlanExerciseDto(PlanExercise exercise) {
         return new PlanExerciseDTO(
                 exercise.getId(),
                 exercise.getName(),
@@ -108,7 +108,7 @@ public class WorkoutPlanMapper {
         return plan;
     }
 
-    private WorkoutDay createWorkoutDayFromDto(WorkoutDayCreationDTO dayDto) {
+    public WorkoutDay createWorkoutDayFromDto(WorkoutDayCreationDTO dayDto) {
         WorkoutDay day = new WorkoutDay();
         day.setDayName(dayDto.getDayName());
         day.setFocus(dayDto.getFocus());
@@ -123,7 +123,7 @@ public class WorkoutPlanMapper {
         return day;
     }
 
-    private PlanExercise createPlanExerciseFromDto(PlanExerciseCreationDTO exDto) {
+    public PlanExercise createPlanExerciseFromDto(PlanExerciseCreationDTO exDto) {
         PlanExercise exercise = new PlanExercise();
         exercise.setName(exDto.getName());
         exercise.setSets(exDto.getSets());

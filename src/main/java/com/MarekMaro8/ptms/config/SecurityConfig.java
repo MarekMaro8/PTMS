@@ -51,7 +51,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/workout-plans/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/workout-plans/**").permitAll()
 
+                        .requestMatchers("/api/clients/*/workouts/**").permitAll()
 
+                        .requestMatchers(HttpMethod.POST, "/api/exercises/**").permitAll()
+
+                        .requestMatchers(HttpMethod.POST, "/api/workout-days/**").permitAll()
 
                         .anyRequest().authenticated()
                 );

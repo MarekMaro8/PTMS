@@ -30,6 +30,13 @@ public class ClientController {
         return ResponseEntity.ok(clients);
     }
 
+    //Metoda ktora zwraca tylko klientów bez trenera
+    @GetMapping("/without-trainer")
+    public ResponseEntity<List<ClientDTO>> getClientsWithoutTrainer() {
+        List<ClientDTO> clients = clientService.findAllClientsWithoutTrainer();
+        return ResponseEntity.ok(clients);
+    }
+
 
 }
 

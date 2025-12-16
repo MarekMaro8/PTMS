@@ -43,7 +43,7 @@ public class ClientService {
     }
 
     public List<ClientDTO> findAllClientsWithoutTrainer() {
-        return clientRepository.findAll().stream()
+        return clientRepository.findAllByTrainerIsNull().stream()
                 .map(clientMapper::toDto)
                 .collect(Collectors.toList());
     }
@@ -80,5 +80,4 @@ public class ClientService {
         }
         return clientMapper.toDto(client);
     }
-
 }

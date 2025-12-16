@@ -1,68 +1,101 @@
 package com.MarekMaro8.ptms.service;
 
+import com.MarekMaro8.ptms.dto.plan.planexercise.PlanExerciseCreationDTO;
+import com.MarekMaro8.ptms.dto.plan.planexercise.PlanExerciseDTO;
+import com.MarekMaro8.ptms.dto.plan.workoutday.WorkoutDayCreationDTO;
+import com.MarekMaro8.ptms.dto.plan.workoutday.WorkoutDayDTO;
+import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanMapper;
 import com.MarekMaro8.ptms.model.PlanExercise;
+import com.MarekMaro8.ptms.model.SessionExercise;
 import com.MarekMaro8.ptms.model.WorkoutDay;
 import com.MarekMaro8.ptms.model.WorkoutPlan;
 import com.MarekMaro8.ptms.repository.PlanExerciseRepository;
+import com.MarekMaro8.ptms.repository.SessionExerciseRepository;
 import com.MarekMaro8.ptms.repository.WorkoutDayRepository;
 import com.MarekMaro8.ptms.repository.WorkoutPlanRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class WorkoutDayService {
 
     private final WorkoutPlanRepository workoutPlanRepository;
     private final WorkoutDayRepository workoutDayRepository;
-    private final PlanExerciseRepository planExerciseRepository;
+    private final PlanExerciseRepository planExerciseRepository; // 2. Potrzebne repozytorium
+    private final WorkoutPlanMapper workoutPlanMapper;
+    private final SessionExerciseRepository sessionExerciseRepository;
 
-    public WorkoutDayService(WorkoutPlanRepository workoutPlanRepository, WorkoutDayRepository workoutDayRepository, PlanExerciseRepository planExerciseRepository) {
+    public WorkoutDayService(WorkoutPlanRepository workoutPlanRepository,
+                             WorkoutDayRepository workoutDayRepository,
+                             PlanExerciseRepository planExerciseRepository, // 3. Wstrzykiwanie
+                             WorkoutPlanMapper workoutPlanMapper, SessionExerciseRepository sessionExerciseRepository) {
         this.workoutPlanRepository = workoutPlanRepository;
         this.workoutDayRepository = workoutDayRepository;
         this.planExerciseRepository = planExerciseRepository;
+        this.workoutPlanMapper = workoutPlanMapper;
+        this.sessionExerciseRepository = sessionExerciseRepository;
     }
 
-
+    // tworzenie dnia treningowego w planie
     @Transactional
-    public WorkoutDay createWorkoutDayWithExercises(Long planId, WorkoutDay dayData, List<PlanExercise> exercisesData) {
+    public WorkoutDayDTO createWorkoutDayWithExercises(Long planId, WorkoutDayCreationDTO dayData) {
 
-        // 1. POBRANIE: Sprawdź, czy Plan istnieje
         WorkoutPlan plan = workoutPlanRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Workout Plan not found."));
 
-        // 2. TWORZENIE DNIA I SYNCHRONIZACJA
-        plan.addWorkoutDay(dayData); // Zapewnia plan.setWorkoutPlan(this)
+        WorkoutDay newWorkoutDayEntity = workoutPlanMapper.createWorkoutDayFromDto(dayData);
 
-        // 3. Zapis Dnia (żeby miał ID przed dodaniem do niego ćwiczeń)
-        WorkoutDay savedDay = workoutDayRepository.save(dayData);
+        plan.addWorkoutDay(newWorkoutDayEntity);
 
-        // 4. DODAWANIE ĆWICZEŃ
-        for (PlanExercise exercise : exercisesData) {
-            addExerciseInstruction(savedDay.getId(), exercise);
-        }
+        WorkoutDay savedDay = workoutDayRepository.save(newWorkoutDayEntity);
 
-        return savedDay;
+        return workoutPlanMapper.toWorkoutDayDto(savedDay);
     }
 
+    // dodawanie ćwiczenia do dnia treningowego
     @Transactional
-    public PlanExercise addExerciseInstruction(Long dayId, PlanExercise exerciseData) {
+    public PlanExerciseDTO addExerciseInstruction(Long dayId, PlanExerciseCreationDTO exerciseData) {
 
-        // 1. POBRANIE: Upewnij się, że Dzień istnieje
         WorkoutDay day = workoutDayRepository.findById(dayId)
                 .orElseThrow(() -> new IllegalArgumentException("Workout Day not found."));
 
-        // 2. WALIDACJA LOKALNA: Nazwa ćwiczenia jest wymagana.
-        if (exerciseData.getName() == null || exerciseData.getName().trim().isEmpty()) {
+        if (exerciseData.getExerciseId() == null) {
             throw new IllegalArgumentException("Exercise name cannot be empty.");
         }
 
-        // 3. SYNCHRONIZACJA RELACJI (Helper Method):
-        // Użycie helper method z klasy WorkoutDay, by ustawić FK w PlanExercise
-        day.addPlanExercise(exerciseData);
+        PlanExercise exerciseEntity = workoutPlanMapper.createPlanExerciseFromDto(exerciseData);
 
-        // 4. ZAPIS:
-        return planExerciseRepository.save(exerciseData);
+        day.addPlanExercise(exerciseEntity);
+
+        PlanExercise savedExercise = planExerciseRepository.save(exerciseEntity);
+
+        return workoutPlanMapper.toPlanExerciseDto(savedExercise);
     }
+
+
+    // pobieranie dni treningowych dla planu
+    @Transactional(readOnly = true) // Tylko do odczytu
+    public List<WorkoutDayDTO> findAllByWorkoutPlanId(Long planId) {
+        List<WorkoutDay> days = workoutDayRepository.findAllByWorkoutPlanId(planId);
+        return days.stream()
+                .map(workoutPlanMapper::toWorkoutDayDto)
+                .collect(Collectors.toList());
+    }
+
+    // usuwanie ćwiczenia z sesji
+    @Transactional
+    public void deleteSessionExercise(Long sessionId, Long sessionExerciseId) {
+        SessionExercise exercise = sessionExerciseRepository.findById(sessionExerciseId)
+                .orElseThrow(() -> new IllegalArgumentException("Exercise not found"));
+        if (!exercise.getSession().getId().equals(sessionId)) {
+            throw new SecurityException("Exercise does not belong to this session");
+        }
+
+        sessionExerciseRepository.delete(exercise);
+    }
+
+
 }

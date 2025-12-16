@@ -4,12 +4,14 @@ import jakarta.validation.constraints.NotNull;
 
 public class PlanExerciseCreationDTO {
     @NotBlank(message = "Exercise name is required")
-    private String name;
+    private Long exerciseId; // ZMIANA: ID zamiast Nazwy
 
     @NotNull
     private Integer sets;
     private String repsRange;
+
     private Integer rpe;
+
 
     public Integer getSets() {
         return sets;
@@ -35,11 +37,11 @@ public class PlanExerciseCreationDTO {
         this.rpe = rpe;
     }
 
-    public String getName() {
-        return name;
+    public Long getExerciseId() {
+        return exerciseId;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setExerciseId(Long exerciseId) {
+        this.exerciseId = exerciseId;
     }
 }

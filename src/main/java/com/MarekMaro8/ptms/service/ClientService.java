@@ -42,6 +42,12 @@ public class ClientService {
                 .collect(Collectors.toList());
     }
 
+    public List<ClientDTO> findAllClientsWithoutTrainer() {
+        return clientRepository.findAllByTrainerIsNull().stream()
+                .map(clientMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public ClientDTO registerClient(ClientRegistrationDTO clientRegistrationDTO) {
         //Sprawdzamy czy email wolny
@@ -74,5 +80,4 @@ public class ClientService {
         }
         return clientMapper.toDto(client);
     }
-
 }

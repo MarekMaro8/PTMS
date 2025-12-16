@@ -65,7 +65,7 @@ public class WorkoutPlanService {
     }
 
     @Transactional
-    public WorkoutPlanDTO activatePlan(Long planId, Long trainerId) {
+    public WorkoutPlanDTO activatePlan(Long trainerId, Long planId) {
         WorkoutPlan planToActivate = workoutPlanRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Workout plan not found."));
         if (!planToActivate.getClient().getTrainer().getId().equals(trainerId)) {

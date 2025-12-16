@@ -9,9 +9,7 @@ public class PlanExercise {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Pole przechowujące identyfikator ćwiczenia z ExerciseDB
     @Column(nullable = false)
-    private String name;
     private Integer sets;
     private String repsRange;
     private Integer rpe;
@@ -21,11 +19,15 @@ public class PlanExercise {
     @JoinColumn(name = "workout_day_id")
     private WorkoutDay workoutDay;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "exercise_id") // Baza danych będzie trzymać ID, a nie tekst
+    private Exercise exercise;
+
     public PlanExercise() {}
 
     // KONSTRUKTOR INICJALIZUJĄCY: Kluczowe dane + Relacja
-    public PlanExercise(String name, Integer sets, String repsRange, Integer rpe, WorkoutDay workoutDay) {
-        this.name = name;
+    public PlanExercise( Exercise exercise, Integer sets, String repsRange, Integer rpe, WorkoutDay workoutDay ){
+        this.exercise = exercise;
         this.sets = sets;
         this.repsRange = repsRange;
         this.rpe = rpe;
@@ -37,14 +39,6 @@ public class PlanExercise {
         return id;
     }
 
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
 
     public Integer getSets() {
         return sets;
@@ -76,5 +70,13 @@ public class PlanExercise {
 
     public void setWorkoutDay(WorkoutDay workoutDay) {
         this.workoutDay = workoutDay;
+    }
+
+    public Exercise getExercise() {
+        return exercise;
+    }
+
+    public void setExercise(Exercise exercise) {
+        this.exercise = exercise;
     }
 }

@@ -1,42 +1,43 @@
 package com.MarekMaro8.ptms.service;
 
-import com.MarekMaro8.ptms.dto.plan.planexercise.PlanExerciseDTO; // Możesz stworzyć dedykowane ExerciseDTO, ale na razie użyjmy encji/prostego mapowania
+import com.MarekMaro8.ptms.dto.exercise.ExerciseCreationDTO; // Import
+import com.MarekMaro8.ptms.dto.exercise.ExerciseDTO;
+import com.MarekMaro8.ptms.dto.exercise.ExerciseMapper;     // Import
 import com.MarekMaro8.ptms.model.Exercise;
 import com.MarekMaro8.ptms.repository.ExerciseRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ExerciseService {
 
     private final ExerciseRepository exerciseRepository;
+    private final ExerciseMapper exerciseMapper; // Wstrzykujemy Mapper
 
-    public ExerciseService(ExerciseRepository exerciseRepository) {
+    public ExerciseService(ExerciseRepository exerciseRepository, ExerciseMapper exerciseMapper) {
         this.exerciseRepository = exerciseRepository;
+        this.exerciseMapper = exerciseMapper;
     }
 
-    // Pobierz wszystkie dostępne ćwiczenia (np. do listy rozwijanej na froncie)
-    public List<Exercise> getAllExercises() {
-        return exerciseRepository.findAll();
+    public List<ExerciseDTO> getAllExercises() {
+        return exerciseRepository.findAll().stream()
+                .map(exerciseMapper::toDto) // Eleganckie użycie mappera
+                .collect(Collectors.toList());
     }
 
-    // Dodaj nowe ćwiczenie do słownika (np. "Martwy Ciąg")
     @Transactional
-    public Exercise createExercise(String name, String muscleGroup) {
-        // Logika biznesowa: Sprawdzamy duplikaty
-        if (exerciseRepository.existsByName(name)) {
-            throw new IllegalArgumentException("Exercise with name '" + name + "' already exists.");
+    public ExerciseDTO createExercise(ExerciseCreationDTO creationDto) {
+        if (exerciseRepository.existsByName(creationDto.getName())) {
+            throw new IllegalArgumentException("Exercise with name '" + creationDto.getName() + "' already exists.");
         }
 
-        Exercise exercise = new Exercise(name, muscleGroup);
-        return exerciseRepository.save(exercise);
-    }
+        Exercise exercise = exerciseMapper.toEntity(creationDto);
 
-    // Pobieranie po ID (pomocnicze)
-    public Exercise getExerciseById(Long id) {
-        return exerciseRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Exercise not found with id: " + id));
+        Exercise saved = exerciseRepository.save(exercise);
+
+        return exerciseMapper.toDto(saved);
     }
 }

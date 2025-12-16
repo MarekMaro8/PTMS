@@ -26,18 +26,14 @@ public class SessionSet {
 
     private Double rpe; // RPE (może być null, może być 8.5)
 
-    @Column(name = "is_warmup")
-    private boolean isWarmup = false; // Czy to seria rozgrzewkowa?
-
     // Konstruktory
     public SessionSet() {}
 
-    public SessionSet(Integer setNumber, Integer reps, Double weight, Double rpe, boolean isWarmup) {
+    public SessionSet(Integer setNumber, Integer reps, Double weight, Double rpe) {
         this.setNumber = setNumber;
         this.reps = reps;
         this.weight = weight;
         this.rpe = rpe;
-        this.isWarmup = isWarmup;
     }
 
     // Gettery i Settery
@@ -58,6 +54,4 @@ public class SessionSet {
     public Double getRpe() { return rpe; }
     public void setRpe(Double rpe) { this.rpe = rpe; }
 
-    public boolean isWarmup() { return isWarmup; }
-    public void setWarmup(boolean warmup) { isWarmup = warmup; }
 }

@@ -79,7 +79,7 @@ public class SessionMapper {
                 set.getSetNumber(),
                 set.getReps(),
                 set.getWeight(),
-                set.getRpe(),
+                set.getRpe()
         );
     }
 }

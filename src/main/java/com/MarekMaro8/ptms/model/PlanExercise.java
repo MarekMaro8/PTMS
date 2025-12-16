@@ -9,7 +9,6 @@ public class PlanExercise {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Pole przechowujące identyfikator ćwiczenia z ExerciseDB
     @Column(nullable = false)
     private Integer sets;
     private String repsRange;
@@ -27,7 +26,7 @@ public class PlanExercise {
     public PlanExercise() {}
 
     // KONSTRUKTOR INICJALIZUJĄCY: Kluczowe dane + Relacja
-    public PlanExercise(String name, Integer sets, String repsRange, Integer rpe, WorkoutDay workoutDay, Exercise exercise) {
+    public PlanExercise( Exercise exercise, Integer sets, String repsRange, Integer rpe, WorkoutDay workoutDay ){
         this.exercise = exercise;
         this.sets = sets;
         this.repsRange = repsRange;

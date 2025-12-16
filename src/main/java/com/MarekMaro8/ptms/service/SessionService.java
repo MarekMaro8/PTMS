@@ -125,6 +125,7 @@ public class SessionService {
     // ==========================================
     // 3. ZARZĄDZANIE ĆWICZENIAMI (Logika z SessionExerciseService)
     // ==========================================
+
     // Dodawanie ćwiczenia "ad-hoc" (spoza planu, np. klient chce dorzucić Biceps)
     @Transactional
     public SessionDTO addAdHocExercise(Long sessionId, Long exerciseId) {
@@ -146,6 +147,19 @@ public class SessionService {
         sessionExerciseRepository.save(newEx);
 
         return sessionMapper.toDto(session);
+    }
+    // Usuwanie ćwiczenia z sesji
+    @Transactional
+    public void deleteSessionExercise(Long sessionId, Long sessionExerciseId) {
+        SessionExercise exercise = sessionExerciseRepository.findById(sessionExerciseId)
+                .orElseThrow(() -> new IllegalArgumentException("Exercise not found"));
+
+        // Security check: Czy usuwamy ćwiczenie z właściwej sesji?
+        if (!exercise.getSession().getId().equals(sessionId)) {
+            throw new SecurityException("Exercise does not belong to this session");
+        }
+
+        sessionExerciseRepository.delete(exercise);
     }
 
     // ==========================================

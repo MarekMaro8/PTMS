@@ -46,7 +46,7 @@ public class TrainerClientController {
             return new ResponseEntity<>(HttpStatus.CONFLICT); // 409 Conflict
         }
     }
-
+    // Odpinanie klienta od trenera
     @DeleteMapping("/unassign/{clientId}")
     public ResponseEntity<Void> unassignClient(
             @PathVariable Long trainerId,

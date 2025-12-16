@@ -1,5 +1,6 @@
 package com.MarekMaro8.ptms.Controller;
 
+import com.MarekMaro8.ptms.dto.session.AddSessionSetDTO;
 import com.MarekMaro8.ptms.dto.session.SessionDTO;
 import com.MarekMaro8.ptms.dto.session.SessionNotesDTO;
 import com.MarekMaro8.ptms.dto.session.SessionStartDTO;
@@ -54,5 +55,52 @@ public class ClientWorkoutController {
 
         sessionService.updateSessionNotes(sessionId, clientId, notesDto.getNotes());
         return ResponseEntity.ok().build();
+    }
+
+    // Dodaj Serię (np. "Zrobiłem 10 powtórzeń 100kg")
+    @PostMapping("/{sessionId}/exercises/{sessionExerciseId}/sets")
+    public ResponseEntity<SessionDTO> addSet(
+            @PathVariable Long clientId,
+            @PathVariable Long sessionId,
+            @PathVariable Long sessionExerciseId,
+            @RequestBody AddSessionSetDTO setDto) {
+
+        // Wywołujemy metodę, którą dodaliśmy do SessionService
+        SessionDTO updatedSession = sessionService.addSetToExercise(sessionId, sessionExerciseId, setDto);
+        return ResponseEntity.ok(updatedSession);
+    }
+
+    // Usuń Serię (gdy użytkownik się pomylił)
+    @DeleteMapping("/{sessionId}/sets/{setId}")
+    public ResponseEntity<Void> deleteSet(
+            @PathVariable Long clientId,
+            @PathVariable Long sessionId,
+            @PathVariable Long setId) {
+
+        sessionService.deleteSet(sessionId, setId);
+        return ResponseEntity.noContent().build(); // 204 No Content (Standard przy usuwaniu)
+    }
+
+    // 3. Dodaj ćwiczenie spoza planu (Ad-Hoc)
+    @PostMapping("/{sessionId}/exercises/ad-hoc")
+    public ResponseEntity<SessionDTO> addAdHocExercise(
+            @PathVariable Long clientId,
+            @PathVariable Long sessionId,
+            @RequestParam Long exerciseId) { // ID ze słownika przekazujemy jako parametr ?exerciseId=...
+
+        SessionDTO updatedSession = sessionService.addAdHocExercise(sessionId, exerciseId);
+        return ResponseEntity.ok(updatedSession);
+    }
+
+    // 4. Usuń ćwiczenie z sesji (np. boli mnie bark, usuwam Wyciskanie)
+    // URL: /api/clients/{id}/workouts/{sessionId}/exercises/{sessionExerciseId}
+    @DeleteMapping("/{sessionId}/exercises/{sessionExerciseId}")
+    public ResponseEntity<Void> deleteExerciseFromSession(
+            @PathVariable Long clientId,
+            @PathVariable Long sessionId,
+            @PathVariable Long sessionExerciseId) {
+
+        sessionService.deleteSessionExercise(sessionId, sessionExerciseId);
+        return ResponseEntity.noContent().build();
     }
 }

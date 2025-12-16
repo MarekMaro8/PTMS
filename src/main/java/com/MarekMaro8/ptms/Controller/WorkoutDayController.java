@@ -9,9 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class WorkoutDayController {
 
 
-
-//    createWorkoutDayWithExercises
-    //addExerciseInstruction
+//toDO
+// createWorkoutDayWithExercises, addExerciseInstruction, findAllByWorkoutPlanId
 
 
 }

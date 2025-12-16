@@ -4,9 +4,11 @@ import com.MarekMaro8.ptms.dto.plan.planexercise.PlanExerciseCreationDTO;
 import com.MarekMaro8.ptms.dto.plan.planexercise.PlanExerciseDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutday.WorkoutDayCreationDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutday.WorkoutDayDTO;
+import com.MarekMaro8.ptms.model.Exercise;
 import com.MarekMaro8.ptms.model.PlanExercise;
 import com.MarekMaro8.ptms.model.WorkoutDay;
 import com.MarekMaro8.ptms.model.WorkoutPlan;
+import com.MarekMaro8.ptms.repository.ExerciseRepository; // Importujemy Twoje repozytorium!
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -16,18 +18,20 @@ import java.util.stream.Collectors;
 @Component
 public class WorkoutPlanMapper {
 
+    private final ExerciseRepository exerciseRepository;
+
+    // Wstrzykujemy ExerciseRepository przez konstruktor
+    public WorkoutPlanMapper(ExerciseRepository exerciseRepository) {
+        this.exerciseRepository = exerciseRepository;
+    }
 
     // =================================================================================
     // 1. MAPOWANIE NA WYJŚCIE (Entity -> DTO)
-    // Służy do zwracania planu (GET)
     // =================================================================================
 
     public WorkoutPlanDTO toDto(WorkoutPlan plan) {
-        if (plan == null) {
-            return null;
-        }
+        if (plan == null) return null;
 
-        // Mapowanie listy Dni (z zabezpieczeniem, gdyby lista była null)
         List<WorkoutDayDTO> daysDto = new ArrayList<>();
         if (plan.getWorkoutDays() != null) {
             daysDto = plan.getWorkoutDays().stream()
@@ -47,9 +51,7 @@ public class WorkoutPlanMapper {
         );
     }
 
-    // Metoda pomocnicza: Dzień Entity -> Dzień DTO ALE przyda sie tez w workoutday service :)
     public WorkoutDayDTO toWorkoutDayDto(WorkoutDay day) {
-        // Mapowanie ćwiczeń wewnątrz dnia
         List<PlanExerciseDTO> exercisesDto = new ArrayList<>();
         if (day.getPlanExercises() != null) {
             exercisesDto = day.getPlanExercises().stream()
@@ -65,11 +67,15 @@ public class WorkoutPlanMapper {
         );
     }
 
-    // Metoda pomocnicza: Ćwiczenie Entity -> Ćwiczenie DTO
     public PlanExerciseDTO toPlanExerciseDto(PlanExercise exercise) {
+        // Zabezpieczenie: czy ćwiczenie ma przypisany obiekt ze słownika?
+        Long exId = (exercise.getExercise() != null) ? exercise.getExercise().getId() : null;
+        String exName = (exercise.getExercise() != null) ? exercise.getExercise().getName() : "Unknown Exercise";
+
         return new PlanExerciseDTO(
                 exercise.getId(),
-                exercise.getName(),
+                exId,       // ID ze słownika
+                exName,     // Nazwa ze słownika
                 exercise.getSets(),
                 exercise.getRepsRange(),
                 exercise.getRpe()
@@ -78,33 +84,21 @@ public class WorkoutPlanMapper {
 
     // =================================================================================
     // 2. MAPOWANIE NA WEJŚCIE (DTO -> Entity)
-    // Służy do tworzenia planu (POST) - obsługuje "Draft" (brak dni) i pełny plan
     // =================================================================================
 
     public WorkoutPlan toEntity(WorkoutPlanCreationDTO dto) {
-        if (dto == null) {
-            return null;
-        }
+        if (dto == null) return null;
 
         WorkoutPlan plan = new WorkoutPlan();
         plan.setName(dto.getName());
         plan.setDescription(dto.getDescription());
-        // isActive jest domyślnie false w Entity, serwis decyduje o aktywacji
 
-        // LOGIKA ELASTYCZNA:
-        // Sprawdzamy, czy w DTO przyszła lista dni.
-        // Jeśli jest null lub pusta -> tworzymy plan bez dni (Szkic).
-        // Jeśli są dni -> tworzymy je i przypisujemy.
         if (dto.getWorkoutDays() != null && !dto.getWorkoutDays().isEmpty()) {
             for (WorkoutDayCreationDTO dayDto : dto.getWorkoutDays()) {
                 WorkoutDay day = createWorkoutDayFromDto(dayDto);
-
-                // WAŻNE: Używamy helper method z klasy WorkoutPlan,
-                // aby poprawnie ustawić relację dwukierunkową (Plan <-> Dzień)
                 plan.addWorkoutDay(day);
             }
         }
-
         return plan;
     }
 
@@ -116,19 +110,28 @@ public class WorkoutPlanMapper {
         if (dayDto.getExercises() != null && !dayDto.getExercises().isEmpty()) {
             for (PlanExerciseCreationDTO exDto : dayDto.getExercises()) {
                 PlanExercise exercise = createPlanExerciseFromDto(exDto);
-
                 day.addPlanExercise(exercise);
             }
         }
         return day;
     }
 
+    // --- KLUCZOWA ZMIANA TUTAJ ---
     public PlanExercise createPlanExerciseFromDto(PlanExerciseCreationDTO exDto) {
-        PlanExercise exercise = new PlanExercise();
-        exercise.setName(exDto.getName());
-        exercise.setSets(exDto.getSets());
-        exercise.setRepsRange(exDto.getRepsRange());
-        exercise.setRpe(exDto.getRpe());
-        return exercise;
+        PlanExercise planExercise = new PlanExercise();
+
+        // 1. Pobieramy ćwiczenie z bazy na podstawie ID przesłanego z frontendu
+        Exercise exerciseDict = exerciseRepository.findById(exDto.getExerciseId())
+                .orElseThrow(() -> new IllegalArgumentException("Exercise not found with id: " + exDto.getExerciseId()));
+
+        // 2. Przypisujemy obiekt Exercise do PlanExercise
+        planExercise.setExercise(exerciseDict);
+
+        // 3. Reszta parametrów
+        planExercise.setSets(exDto.getSets());
+        planExercise.setRepsRange(exDto.getRepsRange());
+        planExercise.setRpe(exDto.getRpe());
+
+        return planExercise;
     }
 }

@@ -3,6 +3,8 @@ package com.MarekMaro8.ptms.model;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "sessions")
@@ -20,6 +22,10 @@ public class Session {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id")
     private Client client;
+
+    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SessionExercise> sessionExercises = new ArrayList<>();
+
 
     private String notes;
     private LocalDateTime startTime;
@@ -40,6 +46,19 @@ public class Session {
         this.startTime = startTime;
         this.endTime = endTime;
         this.completed = completed;
+    }
+
+    public void addSessionExercise(SessionExercise exercise) {
+        this.sessionExercises.add(exercise);
+        exercise.setSession(this);
+    }
+
+    public List<SessionExercise> getSessionExercises() {
+        return sessionExercises;
+    }
+
+    public void setSessionExercises(List<SessionExercise> sessionExercises) {
+        this.sessionExercises = sessionExercises;
     }
 
     public Client getClient() {

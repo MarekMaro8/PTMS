@@ -4,10 +4,12 @@ import com.MarekMaro8.ptms.dto.client.ClientDTO;
 import com.MarekMaro8.ptms.service.ClientService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController // 1. Oznacza, że ta klasa obsługuje żądania HTTP
 @RequestMapping("/api/clients") // 2. Definiuje bazową ścieżkę URL
@@ -37,6 +39,12 @@ public class ClientController {
         return ResponseEntity.ok(clients);
     }
 
-
+    @GetMapping("/{clientId}")
+    public ResponseEntity<Optional<ClientDTO>> getClientById(
+            @PathVariable Long clientId
+    ) {
+        Optional<ClientDTO> client = clientService.getClientDtoByClientId(clientId);
+        return ResponseEntity.ok(client);
+    }
 }
 

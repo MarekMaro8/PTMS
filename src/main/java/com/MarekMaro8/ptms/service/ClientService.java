@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 //SERVICE - warstwa logiki biznesowej dla encji Client
@@ -34,6 +35,11 @@ public class ClientService {
         return clientRepository.findAllByTrainerId(trainerId).stream()
                 .map(clientMapper::toDto)
                 .collect(Collectors.toList());
+    }
+
+    public Optional<ClientDTO> getClientDtoByClientId(Long clientId) {
+        return clientRepository.findById(clientId)
+                .map(clientMapper::toDto);
     }
 
     public List<ClientDTO> findAllClients() {

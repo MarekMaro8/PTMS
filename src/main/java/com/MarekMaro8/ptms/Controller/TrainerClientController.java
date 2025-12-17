@@ -2,6 +2,7 @@ package com.MarekMaro8.ptms.Controller;
 
 
 import com.MarekMaro8.ptms.dto.client.ClientDTO;
+import com.MarekMaro8.ptms.dto.trainer.TrainerDTO;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.service.ClientService;
 import com.MarekMaro8.ptms.service.TrainerService;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/trainer/{trainerId}") // Bazowa ścieżka URL dla operacji uwierzytelniania
@@ -23,7 +25,14 @@ public class TrainerClientController {
         this.clientService = clientService;
     }
 
-    // Pobierz wszystkich klientów dla danego trenera :)
+
+    @GetMapping
+    public ResponseEntity<Optional<TrainerDTO>> getTrainerById(@PathVariable Long trainerId) {
+        Optional<TrainerDTO> trainer = trainerService.getTrainerById(trainerId);
+        return ResponseEntity.ok(trainer);
+    }
+
+        // Pobierz wszystkich klientów dla danego trenera :)
     @GetMapping ("/clients") //
     public ResponseEntity<List<ClientDTO>> getAllClientsByTrainerId(@PathVariable Long trainerId) {
         List<ClientDTO> clients = clientService.getClientsDtoByTrainerId(trainerId);

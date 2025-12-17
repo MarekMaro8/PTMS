@@ -1,18 +1,18 @@
 package com.MarekMaro8.ptms.Controller;
 
 import com.MarekMaro8.ptms.dto.plan.planexercise.PlanExerciseCreationDTO;
-import com.MarekMaro8.ptms.dto.plan.planexercise.PlanExerciseDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutday.WorkoutDayCreationDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutday.WorkoutDayDTO;
 import com.MarekMaro8.ptms.service.WorkoutDayService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.security.Principal;
 
 @RestController
-@RequestMapping("/api/workout-days") // Lekka zmiana na liczbę mnogą (standard REST)
+@RequestMapping("/api/workout-days")
 public class WorkoutDayController {
 
     private final WorkoutDayService workoutDayService;
@@ -21,33 +21,46 @@ public class WorkoutDayController {
         this.workoutDayService = workoutDayService;
     }
 
-    // 1. Dodaj nowy Dzień do Planu (np. "Dzień 1 - Push")
+    // 1. Dodaj dzień do planu (Tylko Trener)
     @PostMapping("/plan/{planId}")
     public ResponseEntity<WorkoutDayDTO> addDayToPlan(
             @PathVariable Long planId,
-            @RequestBody WorkoutDayCreationDTO dayDto) {
+            @RequestBody WorkoutDayCreationDTO dto,
+            Principal principal) {
 
-        WorkoutDayDTO createdDay = workoutDayService.createWorkoutDayWithExercises(planId, dayDto);
+        // principal.getName() to email trenera
+        WorkoutDayDTO createdDay = workoutDayService.addDayToPlan(principal.getName(), planId, dto);
         return new ResponseEntity<>(createdDay, HttpStatus.CREATED);
     }
 
-
-    // 2. Dodaj instrukcję ćwiczenia do istniejącego Dnia (np. "Przysiad 3x10")
+    // 2. Dodaj ćwiczenie do dnia (Tylko Trener) - NOWOŚĆ
     @PostMapping("/{dayId}/exercises")
-    public ResponseEntity<PlanExerciseDTO> addExerciseToDay(
+    public ResponseEntity<Void> addExerciseToDay(
             @PathVariable Long dayId,
-            @RequestBody PlanExerciseCreationDTO exerciseDto) {
+            @RequestBody PlanExerciseCreationDTO dto,
+            Principal principal) {
 
-        PlanExerciseDTO createdExercise = workoutDayService.addExerciseInstruction(dayId, exerciseDto);
-        return new ResponseEntity<>(createdExercise, HttpStatus.CREATED);
+        workoutDayService.addExerciseToDay(principal.getName(), dayId, dto);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
+    // 3. Usuń dzień (Tylko Trener)
+    @DeleteMapping("/{dayId}")
+    public ResponseEntity<Void> deleteDay(
+            @PathVariable Long dayId,
+            Principal principal) {
 
-    // 3. Pobierz wszystkie dni dla konkretnego planu (przydatne do wyświetlania widoku edycji)
-    @GetMapping("/plan/{planId}")
-    public ResponseEntity<List<WorkoutDayDTO>> getDaysByPlan(@PathVariable Long planId) {
-        return ResponseEntity.ok(workoutDayService.findAllByWorkoutPlanId(planId));
+        workoutDayService.deleteDay(principal.getName(), dayId);
+        return ResponseEntity.noContent().build();
     }
 
+    // 4. Usuń ćwiczenie z dnia (Tylko Trener) - Opcjonalne
+    @DeleteMapping("/exercises/{planExerciseId}")
+    public ResponseEntity<Void> deleteExercise(
+            @PathVariable Long planExerciseId,
+            Principal principal) {
 
+        workoutDayService.deleteExerciseFromDay(principal.getName(), planExerciseId);
+        return ResponseEntity.noContent().build();
+    }
 }

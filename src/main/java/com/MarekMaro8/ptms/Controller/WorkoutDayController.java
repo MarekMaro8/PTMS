@@ -7,6 +7,7 @@ import com.MarekMaro8.ptms.dto.plan.workoutday.WorkoutDayDTO;
 import com.MarekMaro8.ptms.service.WorkoutDayService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -23,6 +24,7 @@ public class WorkoutDayController {
     }
 
     // 1. Dodaj nowy Dzień do Planu
+    @PreAuthorize("hasRole('TRAINER')")
     @PostMapping("/plan/{planId}")
     public ResponseEntity<WorkoutDayDTO> addDayToPlan(
             @PathVariable Long planId,
@@ -34,6 +36,7 @@ public class WorkoutDayController {
     }
 
     // 2. Dodaj instrukcję ćwiczenia do istniejącego Dnia
+    @PreAuthorize("hasRole('TRAINER')")
     @PostMapping("/{dayId}/exercises")
     public ResponseEntity<PlanExerciseDTO> addExerciseToDay(
             @PathVariable Long dayId,
@@ -45,6 +48,7 @@ public class WorkoutDayController {
     }
 
     // 3. Pobierz wszystkie dni
+    @PreAuthorize("hasAnyRole('TRAINER', 'CLIENT')")
     @GetMapping("/plan/{planId}")
     public ResponseEntity<List<WorkoutDayDTO>> getDaysByPlan(@PathVariable Long planId) {
         return ResponseEntity.ok(workoutDayService.findAllByWorkoutPlanId(planId));

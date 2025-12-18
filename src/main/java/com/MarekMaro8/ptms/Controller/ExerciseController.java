@@ -6,6 +6,7 @@ import com.MarekMaro8.ptms.dto.exercise.ExerciseMapper;
 import com.MarekMaro8.ptms.service.ExerciseService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,13 +22,14 @@ public class ExerciseController {
         this.exerciseService = exerciseService;
     }
 
-
+    @PreAuthorize("hasAnyRole('TRAINER', 'CLIENT')")
     @GetMapping()
     public ResponseEntity<List<ExerciseDTO>> getAllExercises() {
         List<ExerciseDTO> exercises = exerciseService.getAllExercises();
         return ResponseEntity.ok(exercises);
     }
 
+    @PreAuthorize("hasRole('TRAINER')")
     @PostMapping()
     public ResponseEntity<ExerciseDTO> addExercise(@RequestBody ExerciseCreationDTO exerciseCreationDTO) {
         try {

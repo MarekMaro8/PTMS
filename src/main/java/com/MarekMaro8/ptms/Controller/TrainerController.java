@@ -5,6 +5,7 @@ import com.MarekMaro8.ptms.dto.trainer.TrainerDTO;
 import com.MarekMaro8.ptms.service.TrainerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -23,6 +24,7 @@ public class TrainerController {
 
     // 1. Zalogowany trener pobiera SWÓJ profil
     // GET /api/trainers/me
+    @PreAuthorize("hasRole('TRAINER')")
     @GetMapping("/me")
     public ResponseEntity<TrainerDTO> getMyProfile(Principal principal) {
         return ResponseEntity.ok(trainerService.getMyProfile(principal.getName()));
@@ -30,6 +32,7 @@ public class TrainerController {
 
     // 2. Zalogowany trener pobiera listę SWOICH klientów
     // GET /api/trainers/me/clients
+    @PreAuthorize("hasRole('TRAINER')")
     @GetMapping("/me/clients")
     public ResponseEntity<List<ClientDTO>> getMyClients(Principal principal) {
         return ResponseEntity.ok(trainerService.getMyClients(principal.getName()));
@@ -37,6 +40,7 @@ public class TrainerController {
 
     // 3. Trener pobiera szczegóły konkretnego klienta (z weryfikacją)
     // GET /api/trainers/clients/{clientId}
+    @PreAuthorize("hasRole('TRAINER')")
     @GetMapping("/clients/{clientId}")
     public ResponseEntity<ClientDTO> getClientDetails(@PathVariable Long clientId, Principal principal) {
         try {
@@ -48,6 +52,7 @@ public class TrainerController {
 
     // 4. Przypisz klienta do MNIE (zalogowanego trenera)
     // POST /api/trainers/clients/{clientId}/assign
+    @PreAuthorize("hasRole('TRAINER')")
     @PostMapping("/clients/{clientId}/assign")
     public ResponseEntity<ClientDTO> assignClientToMe(@PathVariable Long clientId, Principal principal) {
         try {
@@ -60,6 +65,7 @@ public class TrainerController {
 
     // 5. Odepnij klienta ode MNIE
     // DELETE /api/trainers/clients/{clientId}/unassign
+    @PreAuthorize("hasRole('TRAINER')")
     @DeleteMapping("/clients/{clientId}/unassign")
     public ResponseEntity<Void> unassignClientFromMe(@PathVariable Long clientId, Principal principal) {
         try {
@@ -71,6 +77,7 @@ public class TrainerController {
     }
 
     // Opcjonalnie: Publiczny endpoint do pobrania profilu trenera (bez logowania lub dla klienta)
+    @PreAuthorize("hasRole('CLIENT')")
     @GetMapping("/{trainerId}")
     public ResponseEntity<Optional<TrainerDTO>> getPublicTrainerProfile(@PathVariable Long trainerId) {
         return ResponseEntity.ok(trainerService.getTrainerById(trainerId));

@@ -4,6 +4,7 @@ import com.MarekMaro8.ptms.dto.client.ClientDTO;
 import com.MarekMaro8.ptms.dto.trainer.TrainerDTO;
 import com.MarekMaro8.ptms.service.ClientService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -21,6 +22,7 @@ public class ClientController {
 
     // 1. Zalogowany klient pobiera SWÓJ profil
     // GET /api/clients/me
+    @PreAuthorize("hasRole('CLIENT')")
     @GetMapping("/me")
     public ResponseEntity<ClientDTO> getMyProfile(Principal principal) {
         // principal.getName() zwraca email z tokena logowania
@@ -29,6 +31,7 @@ public class ClientController {
 
     // 2. Zalogowany klient pobiera dane SWOJEGO trenera
     // GET /api/clients/me/trainer
+    @PreAuthorize("hasRole('CLIENT')")
     @GetMapping("/me/trainer")
     public ResponseEntity<TrainerDTO> getMyTrainer(Principal principal) {
         TrainerDTO trainer = clientService.getMyTrainer(principal.getName());
@@ -39,12 +42,14 @@ public class ClientController {
     }
 
     // Opcjonalnie: Lista wszystkich klientów (dla admina/wyszukiwarki)
+    //Bez preauthorize dlatego ze jest to na razie komenda testsowa - bedzie usnieta w przyszlosci
     @GetMapping
     public ResponseEntity<List<ClientDTO>> getAllClients() {
         return ResponseEntity.ok(clientService.findAllClients());
     }
 
     // Opcjonalnie: Lista klientów bez trenera (dla trenerów szukających podopiecznych)
+    @PreAuthorize("hasRole('TRAINER')")
     @GetMapping("/without-trainer")
     public ResponseEntity<List<ClientDTO>> getClientsWithoutTrainer() {
         return ResponseEntity.ok(clientService.findAllClientsWithoutTrainer());

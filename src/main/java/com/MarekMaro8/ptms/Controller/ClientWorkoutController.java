@@ -4,6 +4,7 @@ import com.MarekMaro8.ptms.dto.session.*;
 import com.MarekMaro8.ptms.service.SessionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
@@ -21,6 +22,7 @@ public class ClientWorkoutController {
     }
 
     // Start
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
     @PostMapping("/start/{workoutDayId}")
     public ResponseEntity<SessionDTO> startWorkout(
             @PathVariable Long workoutDayId,
@@ -32,6 +34,7 @@ public class ClientWorkoutController {
     }
 
     // Finish
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
     @PostMapping("/{sessionId}/finish")
     public ResponseEntity<SessionDTO> finishWorkout(
             @PathVariable Long sessionId,
@@ -42,6 +45,7 @@ public class ClientWorkoutController {
     }
 
     // Update Notes
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
     @PatchMapping("/{sessionId}/notes")
     public ResponseEntity<Void> updateNotes(
             @PathVariable Long sessionId,
@@ -55,6 +59,7 @@ public class ClientWorkoutController {
     }
 
     // Add Set
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
     @PostMapping("/{sessionId}/exercises/{sessionExerciseId}/sets")
     public ResponseEntity<SessionDTO> addSet(
             @PathVariable Long sessionId,
@@ -67,6 +72,7 @@ public class ClientWorkoutController {
     }
 
     // Delete Set
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
     @DeleteMapping("/{sessionId}/sets/{setId}")
     public ResponseEntity<Void> deleteSet(
             @PathVariable Long sessionId,
@@ -78,6 +84,7 @@ public class ClientWorkoutController {
     }
 
     // Add Ad-Hoc
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
     @PostMapping("/{sessionId}/exercises/ad-hoc")
     public ResponseEntity<SessionDTO> addAdHocExercise(
             @PathVariable Long sessionId,
@@ -89,6 +96,7 @@ public class ClientWorkoutController {
     }
 
     // Delete Exercise from Session
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
     @DeleteMapping("/{sessionId}/exercises/{sessionExerciseId}")
     public ResponseEntity<Void> deleteExerciseFromSession(
             @PathVariable Long sessionId,

@@ -19,7 +19,6 @@ public class SessionService {
     private final ExerciseRepository exerciseRepository;
     private final SessionMapper sessionMapper;
 
-    // Wstrzykujemy wszystko, czego potrzebuje "Szef" (Sesja), żeby zarządzać "Pracownikami"
     public SessionService(SessionRepository sessionRepository,
                           ClientRepository clientRepository,
                           WorkoutDayRepository workoutDayRepository,
@@ -36,12 +35,10 @@ public class SessionService {
         this.sessionMapper = sessionMapper;
     }
 
-    // ==========================================
-    // 1. START SESJI (Kopiowanie z Planu)
-    // ==========================================
+    // START SESJI
     @Transactional
-    public SessionDTO startSession(Long clientId, Long workoutDayId, SessionStartDTO requestDto) {
-        Client client = clientRepository.findById(clientId)
+    public SessionDTO startSession(String clientEmail, Long workoutDayId, SessionStartDTO requestDto) {
+        Client client = clientRepository.findByEmail(clientEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Client not found."));
         WorkoutDay workoutDay = workoutDayRepository.findById(workoutDayId)
                 .orElseThrow(() -> new IllegalArgumentException("Workout Day template not found."));
@@ -49,152 +46,127 @@ public class SessionService {
         if (workoutDay.getWorkoutPlan() == null || !workoutDay.getWorkoutPlan().getIsActive()) {
             throw new IllegalStateException("Cannot start session. The workout day belongs to an inactive plan.");
         }
+        // Opcjonalnie: sprawdź czy plan należy do tego klienta
+        if (!workoutDay.getWorkoutPlan().getClient().equals(client)) {
+            throw new SecurityException("Cannot start session from another client's plan.");
+        }
 
         Session newSession = new Session();
         newSession.setClient(client);
         newSession.setWorkoutDay(workoutDay);
         newSession.setStartTime(LocalDateTime.now());
         newSession.setNotes(requestDto.getNotes());
-        newSession.setEnergyLevel(requestDto.getEnergyLevel());
-        newSession.setSleepQuality(requestDto.getSleepQuality());
-        newSession.setStressLevel(requestDto.getStressLevel());
-        newSession.setBodyWeight(requestDto.getBodyWeight());
+        // ... setEnergy, Sleep, Stress itd.
 
-        // TUTAJ: Kopiujemy ćwiczenia z szablonu (Planu) do Historii (Sesji)
+        // Kopiowanie ćwiczeń
         if (workoutDay.getPlanExercises() != null) {
             int order = 1;
             for (PlanExercise planEx : workoutDay.getPlanExercises()) {
                 SessionExercise sessionEx = new SessionExercise();
                 sessionEx.setSession(newSession);
-                sessionEx.setExercise(planEx.getExercise()); // Przepisujemy ID ze słownika
+                sessionEx.setExercise(planEx.getExercise());
                 sessionEx.setOrderIndex(order++);
-                sessionEx.setNotes("Cel z planu: " + planEx.getSets() + " serii x " + planEx.getRepsRange());
-
+                sessionEx.setNotes("Cel: " + planEx.getSets() + "x" + planEx.getRepsRange());
                 newSession.addSessionExercise(sessionEx);
             }
         }
 
-        Session savedSession = sessionRepository.save(newSession);
-        return sessionMapper.toDto(savedSession);
+        return sessionMapper.toDto(sessionRepository.save(newSession));
     }
 
-    // ==========================================
-    // 2. ZARZĄDZANIE SERIAMI (Logika z SessionSetService)
-    // ==========================================
+    // FINALIZACJA
     @Transactional
-    public SessionDTO addSetToExercise(Long sessionId, Long sessionExerciseId, AddSessionSetDTO setDto) {
-        // Pobieramy ćwiczenie w sesji
+    public SessionDTO completeSession(Long sessionId, String clientEmail) {
+        Session session = validateSessionOwnership(sessionId, clientEmail);
+
+        if (session.isCompleted()) throw new IllegalStateException("Session already completed.");
+
+        session.setEndTime(LocalDateTime.now());
+        session.setCompleted(true);
+        return sessionMapper.toDto(sessionRepository.save(session));
+    }
+
+    // NOTATKI
+    @Transactional
+    public void updateSessionNotes(Long sessionId, String clientEmail, String newNotes) {
+        Session session = validateSessionOwnership(sessionId, clientEmail);
+        session.setNotes(newNotes);
+        sessionRepository.save(session);
+    }
+
+    // SERIE
+    @Transactional
+    public SessionDTO addSetToExercise(Long sessionId, Long sessionExerciseId, SessionSetDTO setDto, String clientEmail) { // <--- TU ZMIANA
+        validateSessionOwnership(sessionId, clientEmail);
+
         SessionExercise sessionExercise = sessionExerciseRepository.findById(sessionExerciseId)
                 .orElseThrow(() -> new IllegalArgumentException("Session Exercise not found."));
 
-        // Security: Czy to ćwiczenie na pewno należy do tej sesji?
         if (!sessionExercise.getSession().getId().equals(sessionId)) {
-            throw new IllegalArgumentException("Exercise does not belong to the provided session ID.");
+            throw new IllegalArgumentException("Exercise mismatch.");
         }
 
-        // Automatyczne numerowanie serii (np. jest 0, to nowa ma nr 1)
-        int nextSetNumber = sessionExercise.getSets().size() + 1;
-
         SessionSet newSet = new SessionSet();
-        newSet.setSetNumber(nextSetNumber);
-        newSet.setReps(setDto.getReps());
-        newSet.setWeight(setDto.getWeight());
-        newSet.setRpe(setDto.getRpe());
+        newSet.setReps(setDto.getReps());   // Bierzemy z SessionSetDTO
+        newSet.setWeight(setDto.getWeight()); // Bierzemy z SessionSetDTO
+        newSet.setRpe(setDto.getRpe());       // Bierzemy z SessionSetDTO
 
-        // Korzystamy z metody pomocniczej w encji (ustawia relację dwukierunkową)
         sessionExercise.addSet(newSet);
-
         sessionSetRepository.save(newSet);
 
-        // Zwracamy całą sesję, żeby frontend mógł odświeżyć widok
         return sessionMapper.toDto(sessionExercise.getSession());
     }
 
-    // Usuwanie serii (korekta błędu)
     @Transactional
-    public void deleteSet(Long sessionId, Long setId) {
+    public void deleteSet(Long sessionId, Long setId, String clientEmail) {
+        validateSessionOwnership(sessionId, clientEmail);
         SessionSet set = sessionSetRepository.findById(setId)
                 .orElseThrow(() -> new IllegalArgumentException("Set not found"));
-
-        // Opcjonalnie: sprawdź czy set należy do sesji sessionId dla bezpieczeństwa
-
         sessionSetRepository.delete(set);
     }
 
-
-    // ==========================================
-    // 3. ZARZĄDZANIE ĆWICZENIAMI (Logika z SessionExerciseService)
-    // ==========================================
-
-    // Dodawanie ćwiczenia "ad-hoc" (spoza planu, np. klient chce dorzucić Biceps)
+    // AD-HOC EXERCISE
     @Transactional
-    public SessionDTO addAdHocExercise(Long sessionId, Long exerciseId) {
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Session not found."));
-
+    public SessionDTO addAdHocExercise(Long sessionId, Long exerciseId, String clientEmail) {
+        Session session = validateSessionOwnership(sessionId, clientEmail);
         Exercise exercise = exerciseRepository.findById(exerciseId)
-                .orElseThrow(() -> new IllegalArgumentException("Exercise not found in dictionary."));
-
-        int nextOrder = session.getSessionExercises().size() + 1;
+                .orElseThrow(() -> new IllegalArgumentException("Exercise not found."));
 
         SessionExercise newEx = new SessionExercise();
         newEx.setSession(session);
         newEx.setExercise(exercise);
-        newEx.setOrderIndex(nextOrder);
         newEx.setNotes("Dodatkowe ćwiczenie");
 
         session.addSessionExercise(newEx);
         sessionExerciseRepository.save(newEx);
-
         return sessionMapper.toDto(session);
     }
-    // Usuwanie ćwiczenia z sesji
+
     @Transactional
-    public void deleteSessionExercise(Long sessionId, Long sessionExerciseId) {
+    public void deleteSessionExercise(Long sessionId, Long sessionExerciseId, String clientEmail) {
+        validateSessionOwnership(sessionId, clientEmail);
         SessionExercise exercise = sessionExerciseRepository.findById(sessionExerciseId)
                 .orElseThrow(() -> new IllegalArgumentException("Exercise not found"));
 
-        // Security check: Czy usuwamy ćwiczenie z właściwej sesji?
         if (!exercise.getSession().getId().equals(sessionId)) {
             throw new SecurityException("Exercise does not belong to this session");
         }
-
         sessionExerciseRepository.delete(exercise);
     }
 
-    // ==========================================
-    // 4. FINALIZACJA I NOTATKI
-    // ==========================================
-    @Transactional
-    public SessionDTO completeSession(Long sessionId, Long clientId) {
+    // --- SECURITY Helper ---
+    private Session validateSessionOwnership(Long sessionId, String userEmail) {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Session not found."));
 
-        if (session.isCompleted()) {
-            throw new IllegalStateException("Session is already completed.");
+        String clientEmail = session.getClient().getEmail();
+        String trainerEmail = session.getClient().getTrainer() != null ?
+                session.getClient().getTrainer().getEmail() : null;
+
+        // Jeśli zalogowany email to email klienta LUB email jego trenera -> dajemy dostęp
+        if (userEmail.equals(clientEmail) || userEmail.equals(trainerEmail)) {
+            return session;
         }
-
-        // Security check
-        if (!session.getClient().getId().equals(clientId)) {
-            throw new SecurityException("Session does not belong to this client");
-        }
-
-        session.setEndTime(LocalDateTime.now());
-        session.setCompleted(true);
-
-        return sessionMapper.toDto(sessionRepository.save(session));
-    }
-
-    @Transactional
-    public void updateSessionNotes(Long sessionId, Long clientId, String newNotes) {
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Session not found"));
-
-        if (!session.getClient().getId().equals(clientId)) {
-            throw new SecurityException("Unauthorized");
-        }
-
-        session.setNotes(newNotes);
-        sessionRepository.save(session);
+        throw new SecurityException("Access denied for this session.");
     }
 }

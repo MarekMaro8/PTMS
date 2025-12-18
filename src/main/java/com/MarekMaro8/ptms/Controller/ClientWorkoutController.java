@@ -1,18 +1,17 @@
 package com.MarekMaro8.ptms.Controller;
 
-import com.MarekMaro8.ptms.dto.session.AddSessionExerciseDTO;
-import com.MarekMaro8.ptms.dto.session.AddSessionSetDTO;
-import com.MarekMaro8.ptms.dto.session.SessionDTO;
-import com.MarekMaro8.ptms.dto.session.SessionNotesDTO;
+import com.MarekMaro8.ptms.dto.session.*;
 import com.MarekMaro8.ptms.service.SessionService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import java.util.Map;
 
 import java.security.Principal;
 
 @RestController
-@RequestMapping("/api/clients/workouts")
+// USUWAMY {clientId} z prefiksu!
+@RequestMapping("/api/workouts")
 public class ClientWorkoutController {
 
     private final SessionService sessionService;
@@ -21,76 +20,82 @@ public class ClientWorkoutController {
         this.sessionService = sessionService;
     }
 
-    // 1. Start sesji
+    // Start
     @PostMapping("/start/{workoutDayId}")
-    public ResponseEntity<SessionDTO> startSession(
+    public ResponseEntity<SessionDTO> startWorkout(
             @PathVariable Long workoutDayId,
+            @RequestBody SessionStartDTO startDto,
             Principal principal) {
-        return ResponseEntity.ok(sessionService.startSession(principal.getName(), workoutDayId));
+
+        SessionDTO newSession = sessionService.startSession(principal.getName(), workoutDayId, startDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(newSession);
     }
 
-    // 2. Koniec sesji
+    // Finish
     @PostMapping("/{sessionId}/finish")
-    public ResponseEntity<SessionDTO> finishSession(
+    public ResponseEntity<SessionDTO> finishWorkout(
             @PathVariable Long sessionId,
             Principal principal) {
-        return ResponseEntity.ok(sessionService.finishSession(principal.getName(), sessionId));
+
+        SessionDTO completedSession = sessionService.completeSession(sessionId, principal.getName());
+        return ResponseEntity.ok(completedSession);
     }
 
-    // --- NOWE: AKTUALIZACJA NOTATEK ---
-    // PATCH jest idealny do zmiany pojedynczego pola (notatek)
+    // Update Notes
     @PatchMapping("/{sessionId}/notes")
     public ResponseEntity<Void> updateNotes(
             @PathVariable Long sessionId,
-            @RequestBody SessionNotesDTO notesDto,
+            @RequestBody Map<String, String> body,
             Principal principal) {
 
-        sessionService.updateSessionNotes(principal.getName(), sessionId, notesDto.getNotes());
+        // Wyciągamy wartość po kluczu "notes"
+        String notes = body.get("notes");
+        sessionService.updateSessionNotes(sessionId, principal.getName(), notes);
         return ResponseEntity.ok().build();
     }
 
-    // --- NOWE: DODAJ ĆWICZENIE DO SESJI (SPOZA PLANU) ---
-    @PostMapping("/{sessionId}/exercises")
-    public ResponseEntity<Void> addExerciseToSession(
-            @PathVariable Long sessionId,
-            @RequestBody AddSessionExerciseDTO dto,
-            Principal principal) {
-
-        sessionService.addExerciseToSession(principal.getName(), sessionId, dto);
-        return ResponseEntity.ok().build();
-    }
-
-    // --- NOWE: USUŃ ĆWICZENIE Z SESJI ---
-    @DeleteMapping("/{sessionId}/exercises/{sessionExerciseId}")
-    public ResponseEntity<Void> deleteExerciseFromSession(
-            @PathVariable Long sessionId,
-            @PathVariable Long sessionExerciseId,
-            Principal principal) {
-
-        sessionService.removeExerciseFromSession(principal.getName(), sessionId, sessionExerciseId);
-        return ResponseEntity.noContent().build();
-    }
-
-    // 3. Dodaj serię
+    // Add Set
     @PostMapping("/{sessionId}/exercises/{sessionExerciseId}/sets")
-    public ResponseEntity<Void> addSet(
+    public ResponseEntity<SessionDTO> addSet(
             @PathVariable Long sessionId,
             @PathVariable Long sessionExerciseId,
-            @RequestBody AddSessionSetDTO setDto,
+            @RequestBody SessionSetDTO setDto,
             Principal principal) {
 
-        sessionService.addSetToSession(principal.getName(), sessionId, sessionExerciseId, setDto);
-        return ResponseEntity.ok().build();
+        SessionDTO updatedSession = sessionService.addSetToExercise(sessionId, sessionExerciseId, setDto, principal.getName());
+        return ResponseEntity.ok(updatedSession);
     }
 
-    // 4. Usuń serię
+    // Delete Set
     @DeleteMapping("/{sessionId}/sets/{setId}")
     public ResponseEntity<Void> deleteSet(
             @PathVariable Long sessionId,
             @PathVariable Long setId,
             Principal principal) {
 
-        sessionService.deleteSetFromSession(principal.getName(), sessionId, setId);
+        sessionService.deleteSet(sessionId, setId, principal.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    // Add Ad-Hoc
+    @PostMapping("/{sessionId}/exercises/ad-hoc")
+    public ResponseEntity<SessionDTO> addAdHocExercise(
+            @PathVariable Long sessionId,
+            @RequestParam Long exerciseId,
+            Principal principal) {
+
+        SessionDTO updatedSession = sessionService.addAdHocExercise(sessionId, exerciseId, principal.getName());
+        return ResponseEntity.ok(updatedSession);
+    }
+
+    // Delete Exercise from Session
+    @DeleteMapping("/{sessionId}/exercises/{sessionExerciseId}")
+    public ResponseEntity<Void> deleteExerciseFromSession(
+            @PathVariable Long sessionId,
+            @PathVariable Long sessionExerciseId,
+            Principal principal) {
+
+        sessionService.deleteSessionExercise(sessionId, sessionExerciseId, principal.getName());
         return ResponseEntity.noContent().build();
     }
 }

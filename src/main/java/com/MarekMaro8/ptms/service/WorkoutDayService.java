@@ -1,115 +1,95 @@
 package com.MarekMaro8.ptms.service;
 
 import com.MarekMaro8.ptms.dto.plan.planexercise.PlanExerciseCreationDTO;
+import com.MarekMaro8.ptms.dto.plan.planexercise.PlanExerciseDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutday.WorkoutDayCreationDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutday.WorkoutDayDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanMapper;
-import com.MarekMaro8.ptms.model.*;
-import com.MarekMaro8.ptms.repository.*;
+import com.MarekMaro8.ptms.model.PlanExercise;
+import com.MarekMaro8.ptms.model.Trainer;
+import com.MarekMaro8.ptms.model.WorkoutDay;
+import com.MarekMaro8.ptms.model.WorkoutPlan;
+import com.MarekMaro8.ptms.repository.PlanExerciseRepository;
+import com.MarekMaro8.ptms.repository.TrainerRepository;
+import com.MarekMaro8.ptms.repository.WorkoutDayRepository;
+import com.MarekMaro8.ptms.repository.WorkoutPlanRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class WorkoutDayService {
-    private final WorkoutDayRepository workoutDayRepository;
+
     private final WorkoutPlanRepository workoutPlanRepository;
-    private final TrainerRepository trainerRepository;
-    private final ExerciseRepository exerciseRepository;
+    private final WorkoutDayRepository workoutDayRepository;
     private final PlanExerciseRepository planExerciseRepository;
+    private final TrainerRepository trainerRepository; // Dodano
     private final WorkoutPlanMapper workoutPlanMapper;
 
-    public WorkoutDayService(WorkoutDayRepository workoutDayRepository,
-                             WorkoutPlanRepository workoutPlanRepository,
+    public WorkoutDayService(WorkoutPlanRepository workoutPlanRepository,
+                             WorkoutDayRepository workoutDayRepository,
+                             PlanExerciseRepository planExerciseRepository,
                              TrainerRepository trainerRepository,
-                             ExerciseRepository exerciseRepository,
-                             PlanExerciseRepository planExerciseRepository, WorkoutPlanMapper workoutPlanMapper
-                             ) {
-        this.workoutDayRepository = workoutDayRepository;
+                             WorkoutPlanMapper workoutPlanMapper) {
         this.workoutPlanRepository = workoutPlanRepository;
-        this.trainerRepository = trainerRepository;
-        this.exerciseRepository = exerciseRepository;
+        this.workoutDayRepository = workoutDayRepository;
         this.planExerciseRepository = planExerciseRepository;
+        this.trainerRepository = trainerRepository;
         this.workoutPlanMapper = workoutPlanMapper;
     }
 
-    // --- DODAWANIE DNIA DO PLANU ---
     @Transactional
-    public WorkoutDayDTO addDayToPlan(String trainerEmail, Long planId, WorkoutDayCreationDTO creationDTO) {
-        // 1. Sprawdź czy to Twój klient
-        WorkoutPlan plan = validateTrainerAccessToPlan(trainerEmail, planId);
+    public WorkoutDayDTO createWorkoutDayWithExercises(String trainerEmail, Long planId, WorkoutDayCreationDTO dayData) {
+        // Security Check
+        validateTrainerAccessToPlan(trainerEmail, planId);
 
-        WorkoutDay workoutDay = workoutPlanMapper.createWorkoutDayFromDto(creationDTO);
-        workoutDay.setWorkoutPlan(plan); // Ustaw relację
+        WorkoutPlan plan = workoutPlanRepository.findById(planId).orElseThrow();
+        WorkoutDay newWorkoutDayEntity = workoutPlanMapper.createWorkoutDayFromDto(dayData);
 
-        // Jeśli logika biznesowa wymaga od razu zapisania pustego dnia:
-        WorkoutDay savedDay = workoutDayRepository.save(workoutDay);
+        plan.addWorkoutDay(newWorkoutDayEntity);
+        WorkoutDay savedDay = workoutDayRepository.save(newWorkoutDayEntity);
+
         return workoutPlanMapper.toWorkoutDayDto(savedDay);
     }
 
-    // --- DODAWANIE ĆWICZENIA DO DNIA ---
     @Transactional
-    public void addExerciseToDay(String trainerEmail, Long dayId, PlanExerciseCreationDTO dto) {
-        // 1. Pobierz dzień
+    public PlanExerciseDTO addExerciseInstruction(String trainerEmail, Long dayId, PlanExerciseCreationDTO exerciseData) {
         WorkoutDay day = workoutDayRepository.findById(dayId)
-                .orElseThrow(() -> new IllegalArgumentException("Workout day not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Workout Day not found."));
 
-        // 2. Sprawdź czy masz prawo edytować ten dzień (poprzez plan i klienta)
+        // Security Check (przez plan)
         validateTrainerAccessToPlan(trainerEmail, day.getWorkoutPlan().getId());
 
-        // 3. Pobierz definicję ćwiczenia ze słownika
-        Exercise exercise = exerciseRepository.findById(dto.getExerciseId())
-                .orElseThrow(() -> new IllegalArgumentException("Exercise not found in dictionary"));
+        if (exerciseData.getExerciseId() == null) {
+            throw new IllegalArgumentException("Exercise ID cannot be empty.");
+        }
 
-        // 4. Stwórz obiekt PlanExercise (Konkretne zalecenie w planie)
-        PlanExercise planExercise = new PlanExercise();
-        planExercise.setWorkoutDay(day);
-        planExercise.setExercise(exercise);
-        planExercise.setSets(dto.getSets());
-        planExercise.setRepsRange(dto.getRepsRange());
+        PlanExercise exerciseEntity = workoutPlanMapper.createPlanExerciseFromDto(exerciseData);
+        day.addPlanExercise(exerciseEntity);
+        PlanExercise savedExercise = planExerciseRepository.save(exerciseEntity);
 
-        // 5. Zapisz
-        planExerciseRepository.save(planExercise);
+        return workoutPlanMapper.toPlanExerciseDto(savedExercise);
     }
 
-    // --- USUWANIE DNIA ---
-    @Transactional
-    public void deleteDay(String trainerEmail, Long dayId) {
-        WorkoutDay day = workoutDayRepository.findById(dayId)
-                .orElseThrow(() -> new IllegalArgumentException("Workout day not found"));
-
-        // Security Check
-        validateTrainerAccessToPlan(trainerEmail, day.getWorkoutPlan().getId());
-
-        workoutDayRepository.delete(day);
+    @Transactional(readOnly = true)
+    public List<WorkoutDayDTO> findAllByWorkoutPlanId(Long planId) {
+        // Tu można zostawić publiczne lub dodać security, zależnie od potrzeb
+        return workoutDayRepository.findAllByWorkoutPlanId(planId).stream()
+                .map(workoutPlanMapper::toWorkoutDayDto)
+                .collect(Collectors.toList());
     }
 
-    // --- USUWANIE ĆWICZENIA Z DNIA (Opcjonalne, ale warto mieć) ---
-    @Transactional
-    public void deleteExerciseFromDay(String trainerEmail, Long planExerciseId) {
-        PlanExercise planExercise = planExerciseRepository.findById(planExerciseId)
-                .orElseThrow(() -> new IllegalArgumentException("Plan exercise not found"));
-
-        Long planId = planExercise.getWorkoutDay().getWorkoutPlan().getId();
-        validateTrainerAccessToPlan(trainerEmail, planId);
-
-        planExerciseRepository.delete(planExercise);
-    }
-
-    // --- METODA POMOCNICZA (SECURITY) ---
-    private WorkoutPlan validateTrainerAccessToPlan(String trainerEmail, Long planId) {
+    // --- POMOCNICZE ---
+    private void validateTrainerAccessToPlan(String trainerEmail, Long planId) {
         Trainer trainer = trainerRepository.findByEmail(trainerEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Trainer not found"));
-
         WorkoutPlan plan = workoutPlanRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan not found"));
 
-        // Czy plan należy do klienta, który należy do tego trenera?
-        if (plan.getClient() == null ||
-                plan.getClient().getTrainer() == null ||
-                !plan.getClient().getTrainer().getId().equals(trainer.getId())) {
-
-            throw new SecurityException("Access denied: You are not the trainer of this client.");
+        if (plan.getClient() == null || !plan.getClient().getTrainer().equals(trainer)) {
+            throw new SecurityException("Access denied.");
         }
-        return plan;
     }
 }

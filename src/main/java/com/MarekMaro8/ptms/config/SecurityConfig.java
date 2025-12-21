@@ -36,7 +36,12 @@ public class SecurityConfig {
 
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
-                        // 2. NAPRAWA ŚCIEŻEK (używamy ** zamiast *)
+
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+
+
+
+                                // 2. NAPRAWA ŚCIEŻEK (używamy ** zamiast *)
                         // Pozwala na dostęp do /api/auth/client/login, /api/auth/trainer/register itp.
                         .requestMatchers("/api/auth/**").permitAll()
 

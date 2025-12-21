@@ -35,7 +35,7 @@ public class AuthController {
             return new ResponseEntity<>(savedClient, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             // W przypadku, gdy e-mail już istnieje, zwracamy 409 Conflict
-            return new ResponseEntity<>(null, HttpStatus.CONFLICT);
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
     }
 
@@ -57,7 +57,7 @@ public class AuthController {
             TrainerDTO savedTrainer = trainerService.registerTrainer(trainerRegistrationDTO);
             return new ResponseEntity<>(savedTrainer, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(null, HttpStatus.CONFLICT);
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
         }
     }
 

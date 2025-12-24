@@ -9,9 +9,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -24,56 +26,38 @@ import java.util.List;
 public class SecurityConfig {
 
     @Bean
+
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    private final JwtAuthenticationFilter jwtAuthFilter;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. NAPRAWA CORS (Kluczowe dla Reacta)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authorize -> authorize
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Zostaw swoją konfigurację CORS
 
+                .authorizeHttpRequests(auth -> auth
+                        // STREFA PUBLICZNA
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
-
-
-                                // 2. NAPRAWA ŚCIEŻEK (używamy ** zamiast *)
-                        // Pozwala na dostęp do /api/auth/client/login, /api/auth/trainer/register itp.
-                        .requestMatchers("/api/auth/**").permitAll()
-
-                        // Poprawione literówki (usunięte podwójne ukośniki //) i dodane **
-                        .requestMatchers(HttpMethod.POST,
-                                "/api/trainer/*/clients/**",
-                                "/api/trainer/*/assign/**").permitAll()
-
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/**").permitAll()
-
-                        .requestMatchers(HttpMethod.DELETE,
-                                "/api/trainer/*/unassign/**").permitAll()
-
-
-                        .requestMatchers(HttpMethod.POST, "/api/workout-plans/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/workout-plans/**").permitAll()
-
-                        .requestMatchers("/api/clients/*/workouts/**").permitAll()
-
-                        .requestMatchers(HttpMethod.POST, "/api/exercises/**").permitAll()
-
-                        .requestMatchers(HttpMethod.POST, "/api/workout-days/**").permitAll()
-
+                        // STREFA PRYWATNA - Wszystko inne wymaga tokena
                         .anyRequest().authenticated()
+                )
 
+                // ZMIANA: Wyłączamy sesje (STATELESS). Backend nie zapamiętuje usera w RAM.
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                //te dwie linijki sa zeby moc testowac w httpclient
-                        // bez tokena (przy uzyciu authorization: basic) mozna je potem usunac
-                ).httpBasic(Customizer.withDefaults())
-                .formLogin(AbstractAuthenticationFilterConfigurer::permitAll
-        );
+                // DODAJEMY FILTR: Nasz filtr JWT ma działać PRZED standardowym filtrem logowania
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 

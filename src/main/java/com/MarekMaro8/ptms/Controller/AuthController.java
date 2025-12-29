@@ -40,19 +40,22 @@ public class AuthController {
         return new ResponseEntity<>(savedClient, HttpStatus.CREATED);
     }
 
-    // --- LOGOWANIE KLIENTA (ZMIANA) ---
     @PostMapping("/client/login")
     public ResponseEntity<AuthResponse> loginClient(@RequestBody LoginRequest loginRequest) {
-        // 1. Sprawdzamy hasło (tak jak robiłeś to wcześniej w serwisie)
-        // clientService.loginClient rzuci wyjątek jeśli hasło jest złe
         ClientDTO client = clientService.loginClient(loginRequest.getEmail(), loginRequest.getPassword());
 
-        // 2. Jeśli hasło OK -> Generujemy token
         UserDetails userDetails = userDetailsService.loadUserByUsername(client.getEmail());
         String token = jwtService.generateToken(userDetails);
 
-        // 3. Zwracamy Token + Rolę
-        return ResponseEntity.ok(new AuthResponse(token, "CLIENT"));
+        // 3. ZMIANA: Tworzymy AuthResponse przekazując ID i Imię z obiektu client
+        // Dzięki temu Frontend dostanie: { "token": "...", "role": "CLIENT", "id": 1, "firstName": "Marek" }
+        return ResponseEntity.ok(new AuthResponse(
+                token,
+                "CLIENT",
+                client.getId(),
+                client.getFirstName(),
+                client.getLastName()
+        ));
     }
 
 
@@ -62,14 +65,18 @@ public class AuthController {
         return new ResponseEntity<>(savedTrainer, HttpStatus.CREATED);
     }
 
-    // --- LOGOWANIE TRENERA (ZMIANA) ---
     @PostMapping("/trainer/login")
     public ResponseEntity<AuthResponse> loginTrainer(@RequestBody LoginRequest loginRequest) {
         TrainerDTO trainer = trainerService.loginTrainer(loginRequest.getEmail(), loginRequest.getPassword());
-
         UserDetails userDetails = userDetailsService.loadUserByUsername(trainer.getEmail());
         String token = jwtService.generateToken(userDetails);
 
-        return ResponseEntity.ok(new AuthResponse(token, "TRAINER"));
+        return ResponseEntity.ok(new AuthResponse(
+                token,
+                "TRAINER",
+                trainer.getId(),
+                trainer.getFirstName(),
+                trainer.getLastName()
+        ));
     }
 }

@@ -24,7 +24,10 @@ public class JwtService {
     // Musi być długi (min. 256 bitów)
 
     @Value("${jwt.secret}")
-    private String jwtSecret;
+    private String jwtKey;
+
+    @Value("${jwt.expiration}")
+    private long jwtExpiration;
 
     // 2. Wyciąganie nazwy użytkownika (emaila) z tokena
     public String extractUsername(String token) {
@@ -42,7 +45,7 @@ public class JwtService {
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername()) // Tutaj wpisujemy email
                 .setIssuedAt(new Date(System.currentTimeMillis())) // Data wydania
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // Data ważności
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256) // Podpisanie tajnym kluczem
                 .compact();
     }
@@ -76,7 +79,7 @@ public class JwtService {
     }
 
     private Key getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
+        byte[] keyBytes = Decoders.BASE64.decode(jwtKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

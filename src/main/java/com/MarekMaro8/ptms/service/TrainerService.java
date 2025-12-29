@@ -5,6 +5,9 @@ import com.MarekMaro8.ptms.dto.client.ClientMapper;
 import com.MarekMaro8.ptms.dto.trainer.TrainerDTO;
 import com.MarekMaro8.ptms.dto.trainer.TrainerMapper;
 import com.MarekMaro8.ptms.dto.trainer.TrainerRegistrationDTO;
+import com.MarekMaro8.ptms.exception.BusinessRuleException;
+import com.MarekMaro8.ptms.exception.ResourceAlreadyExistsException;
+import com.MarekMaro8.ptms.exception.ResourceNotFoundException;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.model.Trainer;
 import com.MarekMaro8.ptms.repository.ClientRepository;
@@ -44,14 +47,14 @@ public class TrainerService {
     // 1. Pobierz profil zalogowanego trenera
     public TrainerDTO getMyProfile(String email) {
         Trainer trainer = trainerRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Trainer not found with email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("Trainer", "email", email));
         return trainerMapper.toDto(trainer);
     }
 
     // 2. Pobierz listę TYLKO MOICH klientów
     public List<ClientDTO> getMyClients(String trainerEmail) {
         Trainer trainer = trainerRepository.findByEmail(trainerEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Trainer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Trainer", "email", trainerEmail));
 
         return trainer.getClients().stream()
                 .map(clientMapper::toDto)
@@ -61,14 +64,14 @@ public class TrainerService {
     // 3. Pobierz szczegóły klienta Z WERYFIKACJĄ (Czy to mój klient?)
     public ClientDTO getMyClientDetails(String trainerEmail, Long clientId) {
         Trainer trainer = trainerRepository.findByEmail(trainerEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Trainer not found"));
+                .orElseThrow(() ->new ResourceNotFoundException("Trainer", "email", trainerEmail));
 
         Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
 
         // SECURITY CHECK:
         if (client.getTrainer() == null || !client.getTrainer().getId().equals(trainer.getId())) {
-            throw new SecurityException("Access denied: This is not your client.");
+            throw new BusinessRuleException("Client is not assigned to you.");
         }
 
         return clientMapper.toDto(client);
@@ -78,13 +81,13 @@ public class TrainerService {
     @Transactional
     public ClientDTO assignClientToMe(String trainerEmail, Long clientId) {
         Trainer trainer = trainerRepository.findByEmail(trainerEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Trainer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Trainer", "email", trainerEmail));
 
         Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
 
         if (client.getTrainer() != null && !client.getTrainer().equals(trainer)) {
-            throw new IllegalStateException("Client is already assigned to another trainer.");
+            throw new BusinessRuleException("Client is already assigned to another trainer.");
         }
 
         trainer.addClient(client); // Relacja + FK
@@ -97,17 +100,17 @@ public class TrainerService {
     @Transactional
     public void unassignClientFromMe(String trainerEmail, Long clientId) {
         Trainer trainer = trainerRepository.findByEmail(trainerEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Trainer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Trainer", "email", trainerEmail));
 
         Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
 
         // Security Check: Czy odpinam swojego klienta?
         if (client.getTrainer() != null && client.getTrainer().equals(trainer)) {
             client.setTrainer(null);
             clientRepository.save(client);
         } else {
-            throw new SecurityException("Cannot unassign a client that isn't yours.");
+            throw new BusinessRuleException("Cannot unassign a client that isn't yours.");
         }
     }
 
@@ -119,10 +122,7 @@ public class TrainerService {
     public TrainerDTO registerTrainer(TrainerRegistrationDTO dto) {
         if (trainerRepository.findByEmail(dto.getEmail()).isPresent() ||
                 clientRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email already exists.");
-        }
-        if (dto.getPassword() == null || dto.getPassword().isEmpty()) {
-            throw new IllegalArgumentException("Password cannot be empty.");
+            throw new ResourceAlreadyExistsException("Trainer with email '" + dto.getEmail() + "' already exists.");
         }
 
         Trainer trainer = trainerMapper.toEntity(dto);
@@ -135,10 +135,10 @@ public class TrainerService {
 
     public TrainerDTO loginTrainer(String email, String password) {
         Trainer trainer = trainerRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+                .orElseThrow(() -> new BusinessRuleException("Invalid email or password"));
 
         if (!passwordEncoder.matches(password, trainer.getPassword())) {
-            throw new IllegalArgumentException("Invalid email or password");
+            throw new BusinessRuleException("Invalid email or password");
         }
         return trainerMapper.toDto(trainer);
     }

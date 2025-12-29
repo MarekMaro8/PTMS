@@ -3,6 +3,7 @@ package com.MarekMaro8.ptms.service;
 import com.MarekMaro8.ptms.dto.exercise.ExerciseCreationDTO; // Import
 import com.MarekMaro8.ptms.dto.exercise.ExerciseDTO;
 import com.MarekMaro8.ptms.dto.exercise.ExerciseMapper;     // Import
+import com.MarekMaro8.ptms.exception.ResourceAlreadyExistsException;
 import com.MarekMaro8.ptms.model.Exercise;
 import com.MarekMaro8.ptms.repository.ExerciseRepository;
 import org.springframework.stereotype.Service;
@@ -31,7 +32,7 @@ public class ExerciseService {
     @Transactional
     public ExerciseDTO createExercise(ExerciseCreationDTO creationDto) {
         if (exerciseRepository.existsByName(creationDto.getName())) {
-            throw new IllegalArgumentException("Exercise with name '" + creationDto.getName() + "' already exists.");
+            throw new ResourceAlreadyExistsException("Exercise with name '" + creationDto.getName() + "' already exists.");
         }
 
         Exercise exercise = exerciseMapper.toEntity(creationDto);

@@ -1,6 +1,9 @@
 package com.MarekMaro8.ptms.service;
 
 import com.MarekMaro8.ptms.dto.session.*;
+import com.MarekMaro8.ptms.exception.BusinessRuleException;
+import com.MarekMaro8.ptms.exception.ResourceAlreadyExistsException;
+import com.MarekMaro8.ptms.exception.ResourceNotFoundException;
 import com.MarekMaro8.ptms.model.*;
 import com.MarekMaro8.ptms.repository.*;
 import org.springframework.stereotype.Service;
@@ -39,16 +42,16 @@ public class SessionService {
     @Transactional
     public SessionDTO startSession(String clientEmail, Long workoutDayId, SessionStartDTO requestDto) {
         Client client = clientRepository.findByEmail(clientEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Client not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", clientEmail));
         WorkoutDay workoutDay = workoutDayRepository.findById(workoutDayId)
-                .orElseThrow(() -> new IllegalArgumentException("Workout Day template not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Workoutday", "id", workoutDayId));
 
         if (workoutDay.getWorkoutPlan() == null || !workoutDay.getWorkoutPlan().getIsActive()) {
-            throw new IllegalStateException("Cannot start session. The workout day belongs to an inactive plan.");
+            throw new BusinessRuleException("Cannot start session for inactive or non-existing workout plan.");
         }
         // Opcjonalnie: sprawdź czy plan należy do tego klienta
         if (!workoutDay.getWorkoutPlan().getClient().equals(client)) {
-            throw new SecurityException("Cannot start session from another client's plan.");
+            throw new BusinessRuleException("Workout day does not belong to this client.");
         }
 
         Session newSession = new Session();
@@ -79,7 +82,7 @@ public class SessionService {
     public SessionDTO completeSession(Long sessionId, String clientEmail) {
         Session session = validateSessionOwnership(sessionId, clientEmail);
 
-        if (session.isCompleted()) throw new IllegalStateException("Session already completed.");
+        if (session.isCompleted()) throw new ResourceAlreadyExistsException("Session with id '" + sessionId + "' is already completed.");
 
         session.setEndTime(LocalDateTime.now());
         session.setCompleted(true);
@@ -100,10 +103,10 @@ public class SessionService {
         validateSessionOwnership(sessionId, clientEmail);
 
         SessionExercise sessionExercise = sessionExerciseRepository.findById(sessionExerciseId)
-                .orElseThrow(() -> new IllegalArgumentException("Session Exercise not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Session exercise", "id", sessionExerciseId));
 
         if (!sessionExercise.getSession().getId().equals(sessionId)) {
-            throw new IllegalArgumentException("Exercise mismatch.");
+            throw new BusinessRuleException("Exercise does not belong to this session");
         }
 
         SessionSet newSet = new SessionSet();
@@ -121,7 +124,7 @@ public class SessionService {
     public void deleteSet(Long sessionId, Long setId, String clientEmail) {
         validateSessionOwnership(sessionId, clientEmail);
         SessionSet set = sessionSetRepository.findById(setId)
-                .orElseThrow(() -> new IllegalArgumentException("Set not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Set", "id", setId));
         sessionSetRepository.delete(set);
     }
 
@@ -130,7 +133,7 @@ public class SessionService {
     public SessionDTO addAdHocExercise(Long sessionId, Long exerciseId, String clientEmail) {
         Session session = validateSessionOwnership(sessionId, clientEmail);
         Exercise exercise = exerciseRepository.findById(exerciseId)
-                .orElseThrow(() -> new IllegalArgumentException("Exercise not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Exercise", "id", exerciseId));
 
         SessionExercise newEx = new SessionExercise();
         newEx.setSession(session);
@@ -146,10 +149,10 @@ public class SessionService {
     public void deleteSessionExercise(Long sessionId, Long sessionExerciseId, String clientEmail) {
         validateSessionOwnership(sessionId, clientEmail);
         SessionExercise exercise = sessionExerciseRepository.findById(sessionExerciseId)
-                .orElseThrow(() -> new IllegalArgumentException("Exercise not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Session exercise", "id", sessionExerciseId));
 
         if (!exercise.getSession().getId().equals(sessionId)) {
-            throw new SecurityException("Exercise does not belong to this session");
+            throw new BusinessRuleException("Exercise does not belong to this session");
         }
         sessionExerciseRepository.delete(exercise);
     }
@@ -157,7 +160,7 @@ public class SessionService {
     // --- SECURITY Helper ---
     private Session validateSessionOwnership(Long sessionId, String userEmail) {
         Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Session not found."));
+                .orElseThrow(() ->new ResourceNotFoundException("Session", "id", sessionId));
 
         String clientEmail = session.getClient().getEmail();
         String trainerEmail = session.getClient().getTrainer() != null ?
@@ -167,6 +170,6 @@ public class SessionService {
         if (userEmail.equals(clientEmail) || userEmail.equals(trainerEmail)) {
             return session;
         }
-        throw new SecurityException("Access denied for this session.");
+        throw new BusinessRuleException("Access denied to this session.");
     }
 }

@@ -5,6 +5,9 @@ import com.MarekMaro8.ptms.dto.client.ClientMapper;
 import com.MarekMaro8.ptms.dto.client.ClientRegistrationDTO;
 import com.MarekMaro8.ptms.dto.trainer.TrainerDTO;
 import com.MarekMaro8.ptms.dto.trainer.TrainerMapper;
+import com.MarekMaro8.ptms.exception.BusinessRuleException;
+import com.MarekMaro8.ptms.exception.ResourceAlreadyExistsException;
+import com.MarekMaro8.ptms.exception.ResourceNotFoundException;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.repository.ClientRepository;
 import com.MarekMaro8.ptms.repository.TrainerRepository;
@@ -43,14 +46,14 @@ public class ClientService {
     // 1. Pobierz MÓJ profil (bezpieczne - po emailu z tokena)
     public ClientDTO getMyProfile(String email) {
         Client client = clientRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Client not found with email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", email));
         return clientMapper.toDto(client);
     }
 
     // 2. Pobierz profil MOJEGO trenera
     public TrainerDTO getMyTrainer(String clientEmail) {
         Client client = clientRepository.findByEmail(clientEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+                .orElseThrow(() ->  new ResourceNotFoundException("Client", "email", clientEmail));
 
         if (client.getTrainer() == null) {
             return null; // Klient nie ma trenera
@@ -67,7 +70,7 @@ public class ClientService {
         // Sprawdzamy czy email wolny (w obu tabelach)
         if (clientRepository.findByEmail(clientRegistrationDTO.getEmail()).isPresent() ||
                 trainerRepository.findByEmail(clientRegistrationDTO.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email " + clientRegistrationDTO.getEmail() + " already exists.");
+            throw new ResourceAlreadyExistsException("Client with email  '" + clientRegistrationDTO.getEmail() + "' already exists.");
         }
         // Mapowanie (Formularz -> Encja)
         Client clientEntity = clientMapper.toEntity(clientRegistrationDTO);
@@ -83,10 +86,10 @@ public class ClientService {
 
     public ClientDTO loginClient(String email, String password) {
         Client client = clientRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
+                .orElseThrow(() ->  new BusinessRuleException("Invalid email or password"));
 
         if (!passwordEncoder.matches(password, client.getPassword())) {
-            throw new IllegalArgumentException("Invalid email or password");
+            throw new BusinessRuleException("Invalid email or password");
         }
         return clientMapper.toDto(client);
     }

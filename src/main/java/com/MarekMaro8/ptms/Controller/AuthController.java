@@ -36,14 +36,8 @@ public class AuthController {
 
     @PostMapping("/client/register") //
     public ResponseEntity<ClientDTO> createClient(@Valid @RequestBody ClientRegistrationDTO client) {
-        try {
-            ClientDTO savedClient = clientService.registerClient(client);
-            // Zwraca klienta i status 201 Created
-            return new ResponseEntity<>(savedClient, HttpStatus.CREATED);
-        } catch (IllegalArgumentException e) {
-            // W przypadku, gdy e-mail już istnieje, zwracamy 409 Conflict
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
-        }
+        ClientDTO savedClient = clientService.registerClient(client);
+        return new ResponseEntity<>(savedClient, HttpStatus.CREATED);
     }
 
     // --- LOGOWANIE KLIENTA (ZMIANA) ---
@@ -64,12 +58,8 @@ public class AuthController {
 
     @PostMapping("/trainer/register")
     public ResponseEntity<TrainerDTO> createTrainer(@Valid @RequestBody TrainerRegistrationDTO trainerRegistrationDTO) {
-        try {
-            TrainerDTO savedTrainer = trainerService.registerTrainer(trainerRegistrationDTO);
-            return new ResponseEntity<>(savedTrainer, HttpStatus.CREATED);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
-        }
+        TrainerDTO savedTrainer = trainerService.registerTrainer(trainerRegistrationDTO);
+        return new ResponseEntity<>(savedTrainer, HttpStatus.CREATED);
     }
 
     // --- LOGOWANIE TRENERA (ZMIANA) ---

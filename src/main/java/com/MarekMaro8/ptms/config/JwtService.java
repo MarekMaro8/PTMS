@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +22,9 @@ public class JwtService {
     // Tylko Twój serwer go zna. Jak haker go zdobędzie, może podrabiać tokeny.
     // W przyszłości przenieś to do pliku application.properties!
     // Musi być długi (min. 256 bitów)
-    private static final String SECRET_KEY = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
+
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
     // 2. Wyciąganie nazwy użytkownika (emaila) z tokena
     public String extractUsername(String token) {
@@ -73,7 +76,7 @@ public class JwtService {
     }
 
     private Key getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
+        byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

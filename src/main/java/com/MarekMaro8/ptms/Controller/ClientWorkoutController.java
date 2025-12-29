@@ -2,6 +2,7 @@ package com.MarekMaro8.ptms.Controller;
 
 import com.MarekMaro8.ptms.dto.session.*;
 import com.MarekMaro8.ptms.service.SessionService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,7 +27,7 @@ public class ClientWorkoutController {
     @PostMapping("/start/{workoutDayId}")
     public ResponseEntity<SessionDTO> startWorkout(
             @PathVariable Long workoutDayId,
-            @RequestBody SessionStartDTO startDto,
+            @Valid  @RequestBody SessionStartDTO startDto,
             Principal principal) {
 
         SessionDTO newSession = sessionService.startSession(principal.getName(), workoutDayId, startDto);
@@ -64,7 +65,7 @@ public class ClientWorkoutController {
     public ResponseEntity<SessionDTO> addSet(
             @PathVariable Long sessionId,
             @PathVariable Long sessionExerciseId,
-            @RequestBody SessionSetDTO setDto,
+            @Valid  @RequestBody SessionSetDTO setDto,
             Principal principal) {
 
         SessionDTO updatedSession = sessionService.addSetToExercise(sessionId, sessionExerciseId, setDto, principal.getName());
@@ -88,7 +89,7 @@ public class ClientWorkoutController {
     @PostMapping("/{sessionId}/exercises/ad-hoc")
     public ResponseEntity<SessionDTO> addAdHocExercise(
             @PathVariable Long sessionId,
-            @RequestParam Long exerciseId,
+            @Valid  @RequestParam Long exerciseId,
             Principal principal) {
 
         SessionDTO updatedSession = sessionService.addAdHocExercise(sessionId, exerciseId, principal.getName());

@@ -4,6 +4,7 @@ import com.MarekMaro8.ptms.dto.exercise.ExerciseCreationDTO;
 import com.MarekMaro8.ptms.dto.exercise.ExerciseDTO;
 import com.MarekMaro8.ptms.dto.exercise.ExerciseMapper;
 import com.MarekMaro8.ptms.service.ExerciseService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,7 +32,7 @@ public class ExerciseController {
 
     @PreAuthorize("hasRole('TRAINER')")
     @PostMapping()
-    public ResponseEntity<ExerciseDTO> addExercise(@RequestBody ExerciseCreationDTO exerciseCreationDTO) {
+    public ResponseEntity<ExerciseDTO> addExercise(@Valid @RequestBody ExerciseCreationDTO exerciseCreationDTO) {
         try {
             ExerciseDTO createdExercise = exerciseService.createExercise(exerciseCreationDTO);
             return ResponseEntity.ok(createdExercise);

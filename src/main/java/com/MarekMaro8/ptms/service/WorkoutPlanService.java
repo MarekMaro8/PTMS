@@ -3,6 +3,8 @@ package com.MarekMaro8.ptms.service;
 import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanCreationDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanMapper;
+import com.MarekMaro8.ptms.exception.BusinessRuleException;
+import com.MarekMaro8.ptms.exception.ResourceNotFoundException;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.model.Trainer;
 import com.MarekMaro8.ptms.model.WorkoutPlan;
@@ -55,7 +57,7 @@ public class WorkoutPlanService {
     @Transactional
     public WorkoutPlanDTO activatePlan(String trainerEmail, Long planId) {
         WorkoutPlan planToActivate = workoutPlanRepository.findById(planId)
-                .orElseThrow(() -> new IllegalArgumentException("Workout plan not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("WorkoutPlan", "id", planId));
 
         // Security Check
         validateTrainerAccess(trainerEmail, planToActivate.getClient().getId());
@@ -78,10 +80,10 @@ public class WorkoutPlanService {
     @Transactional(readOnly = true)
     public WorkoutPlanDTO getMyActivePlan(String clientEmail) {
         Client client = clientRepository.findByEmail(clientEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", clientEmail));
 
         WorkoutPlan plan = workoutPlanRepository.findByClientIdAndIsActiveTrue(client.getId())
-                .orElseThrow(() -> new IllegalArgumentException("No active plan found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Active workoutPlan", "client mail", clientEmail));
 
         return workoutPlanMapper.toDto(plan);
     }
@@ -89,7 +91,7 @@ public class WorkoutPlanService {
     @Transactional(readOnly = true)
     public List<WorkoutPlanDTO> getMyAllPlans(String clientEmail) {
         Client client = clientRepository.findByEmail(clientEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", clientEmail));
 
         return workoutPlanRepository.findAllByClientId(client.getId()).stream()
                 .map(workoutPlanMapper::toDto)
@@ -100,12 +102,12 @@ public class WorkoutPlanService {
 
     private Client validateTrainerAccess(String trainerEmail, Long clientId) {
         Trainer trainer = trainerRepository.findByEmail(trainerEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Trainer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Trainer", "email", trainerEmail));
         Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
 
         if (client.getTrainer() == null || !client.getTrainer().equals(trainer)) {
-            throw new SecurityException("Access denied: Not your client.");
+            throw new BusinessRuleException("Client is not assigned to you.");
         }
         return client;
     }

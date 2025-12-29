@@ -3,6 +3,7 @@ package com.MarekMaro8.ptms.Controller;
 import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanCreationDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanDTO;
 import com.MarekMaro8.ptms.service.WorkoutPlanService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -43,7 +44,7 @@ public class WorkoutPlanController {
     @PostMapping("/client/{clientId}/new")
     public ResponseEntity<WorkoutPlanDTO> createNewWorkoutPlan(
             @PathVariable Long clientId,
-            @RequestBody WorkoutPlanCreationDTO newWorkoutPlan,
+            @Valid  @RequestBody WorkoutPlanCreationDTO newWorkoutPlan,
             Principal principal) {
 
         return ResponseEntity.ok(workoutPlanService.createNewWorkoutPlan(principal.getName(), clientId, newWorkoutPlan));

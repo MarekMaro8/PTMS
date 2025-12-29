@@ -5,6 +5,8 @@ import com.MarekMaro8.ptms.dto.plan.planexercise.PlanExerciseDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutday.WorkoutDayCreationDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutday.WorkoutDayDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanMapper;
+import com.MarekMaro8.ptms.exception.BusinessRuleException;
+import com.MarekMaro8.ptms.exception.ResourceNotFoundException;
 import com.MarekMaro8.ptms.model.PlanExercise;
 import com.MarekMaro8.ptms.model.Trainer;
 import com.MarekMaro8.ptms.model.WorkoutDay;
@@ -57,13 +59,13 @@ public class WorkoutDayService {
     @Transactional
     public PlanExerciseDTO addExerciseInstruction(String trainerEmail, Long dayId, PlanExerciseCreationDTO exerciseData) {
         WorkoutDay day = workoutDayRepository.findById(dayId)
-                .orElseThrow(() -> new IllegalArgumentException("Workout Day not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Workoutday", "id", dayId));
 
         // Security Check (przez plan)
         validateTrainerAccessToPlan(trainerEmail, day.getWorkoutPlan().getId());
 
         if (exerciseData.getExerciseId() == null) {
-            throw new IllegalArgumentException("Exercise ID cannot be empty.");
+            throw new BusinessRuleException("Exercise ID must be provided.");
         }
 
         PlanExercise exerciseEntity = workoutPlanMapper.createPlanExerciseFromDto(exerciseData);
@@ -84,12 +86,12 @@ public class WorkoutDayService {
     // --- POMOCNICZE ---
     private void validateTrainerAccessToPlan(String trainerEmail, Long planId) {
         Trainer trainer = trainerRepository.findByEmail(trainerEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Trainer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Trainer", "email", trainerEmail));
         WorkoutPlan plan = workoutPlanRepository.findById(planId)
-                .orElseThrow(() -> new IllegalArgumentException("Plan not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Plan", "id", planId));
 
         if (plan.getClient() == null || !plan.getClient().getTrainer().equals(trainer)) {
-            throw new SecurityException("Access denied.");
+            throw  new BusinessRuleException("Access denied: You do not have permission to modify this workout plan.");
         }
     }
 }

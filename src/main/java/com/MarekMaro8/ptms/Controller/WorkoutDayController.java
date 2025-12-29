@@ -5,6 +5,7 @@ import com.MarekMaro8.ptms.dto.plan.planexercise.PlanExerciseDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutday.WorkoutDayCreationDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutday.WorkoutDayDTO;
 import com.MarekMaro8.ptms.service.WorkoutDayService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,7 +29,7 @@ public class WorkoutDayController {
     @PostMapping("/plan/{planId}")
     public ResponseEntity<WorkoutDayDTO> addDayToPlan(
             @PathVariable Long planId,
-            @RequestBody WorkoutDayCreationDTO dayDto,
+            @Valid @RequestBody WorkoutDayCreationDTO dayDto,
             Principal principal) {
 
         WorkoutDayDTO createdDay = workoutDayService.createWorkoutDayWithExercises(principal.getName(), planId, dayDto);
@@ -40,7 +41,7 @@ public class WorkoutDayController {
     @PostMapping("/{dayId}/exercises")
     public ResponseEntity<PlanExerciseDTO> addExerciseToDay(
             @PathVariable Long dayId,
-            @RequestBody PlanExerciseCreationDTO exerciseDto,
+            @Valid  @RequestBody PlanExerciseCreationDTO exerciseDto,
             Principal principal) {
 
         PlanExerciseDTO createdExercise = workoutDayService.addExerciseInstruction(principal.getName(), dayId, exerciseDto);

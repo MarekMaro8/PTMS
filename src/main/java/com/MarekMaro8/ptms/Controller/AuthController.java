@@ -40,6 +40,7 @@ public class AuthController {
         return new ResponseEntity<>(savedClient, HttpStatus.CREATED);
     }
 
+    // --- LOGOWANIE KLIENTA (ZMIANA) ---
     @PostMapping("/client/login")
     public ResponseEntity<AuthResponse> loginClient(@RequestBody LoginRequest loginRequest) {
         ClientDTO client = clientService.loginClient(loginRequest.getEmail(), loginRequest.getPassword());
@@ -65,6 +66,7 @@ public class AuthController {
         return new ResponseEntity<>(savedTrainer, HttpStatus.CREATED);
     }
 
+    // --- LOGOWANIE TRENERA (ZMIANA) ---
     @PostMapping("/trainer/login")
     public ResponseEntity<AuthResponse> loginTrainer(@RequestBody LoginRequest loginRequest) {
         TrainerDTO trainer = trainerService.loginTrainer(loginRequest.getEmail(), loginRequest.getPassword());

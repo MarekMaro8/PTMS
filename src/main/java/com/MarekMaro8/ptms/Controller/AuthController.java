@@ -1,16 +1,19 @@
 package com.MarekMaro8.ptms.Controller;
 
-import com.MarekMaro8.ptms.dto.client.ClientDTO;
+import com.MarekMaro8.ptms.config.JwtService;
+import com.MarekMaro8.ptms.dto.AuthResponse;
 import com.MarekMaro8.ptms.dto.LoginRequest;
+import com.MarekMaro8.ptms.dto.client.ClientDTO;
 import com.MarekMaro8.ptms.dto.client.ClientRegistrationDTO;
 import com.MarekMaro8.ptms.dto.trainer.TrainerDTO;
 import com.MarekMaro8.ptms.dto.trainer.TrainerRegistrationDTO;
-import com.MarekMaro8.ptms.model.Trainer;
 import com.MarekMaro8.ptms.service.ClientService;
+import com.MarekMaro8.ptms.service.CustomUserDetailsService;
 import com.MarekMaro8.ptms.service.TrainerService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,54 +24,61 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
     private final ClientService clientService;
     private final TrainerService trainerService;
+    private final JwtService jwtService; // Dodajemy JwtService
+    private final CustomUserDetailsService userDetailsService; // Dodajemy UserDetailsService
 
-    public AuthController(ClientService clientService, TrainerService trainerService) {
-        this.trainerService = trainerService;
+    public AuthController(ClientService clientService, TrainerService trainerService, JwtService jwtService, CustomUserDetailsService userDetailsService) {
         this.clientService = clientService;
+        this.trainerService = trainerService;
+        this.jwtService = jwtService;
+        this.userDetailsService = userDetailsService;
     }
 
     @PostMapping("/client/register") //
     public ResponseEntity<ClientDTO> createClient(@Valid @RequestBody ClientRegistrationDTO client) {
-        try {
-            ClientDTO savedClient = clientService.registerClient(client);
-            // Zwraca klienta i status 201 Created
-            return new ResponseEntity<>(savedClient, HttpStatus.CREATED);
-        } catch (IllegalArgumentException e) {
-            // W przypadku, gdy e-mail już istnieje, zwracamy 409 Conflict
-            return new ResponseEntity<>(null, HttpStatus.CONFLICT);
-        }
+        ClientDTO savedClient = clientService.registerClient(client);
+        return new ResponseEntity<>(savedClient, HttpStatus.CREATED);
     }
 
+    // --- LOGOWANIE KLIENTA (ZMIANA) ---
     @PostMapping("/client/login")
-    public ResponseEntity<ClientDTO> loginClient(@RequestBody LoginRequest loginRequest) {
-        try {
-            ClientDTO client = clientService.loginClient(loginRequest.getEmail(), loginRequest.getPassword());
-            return ResponseEntity.ok(client);
-        } catch (IllegalArgumentException e) {
-            // Jeśli hasło lub email są złe, zwracamy 401 Unauthorized
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        }
+    public ResponseEntity<AuthResponse> loginClient(@RequestBody LoginRequest loginRequest) {
+        ClientDTO client = clientService.loginClient(loginRequest.getEmail(), loginRequest.getPassword());
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(client.getEmail());
+        String token = jwtService.generateToken(userDetails);
+
+        // 3. ZMIANA: Tworzymy AuthResponse przekazując ID i Imię z obiektu client
+        // Dzięki temu Frontend dostanie: { "token": "...", "role": "CLIENT", "id": 1, "firstName": "Marek" }
+        return ResponseEntity.ok(new AuthResponse(
+                token,
+                "CLIENT",
+                client.getId(),
+                client.getFirstName(),
+                client.getLastName()
+        ));
     }
 
 
     @PostMapping("/trainer/register")
-    public ResponseEntity<TrainerDTO> createTrainer(@RequestBody TrainerRegistrationDTO trainerRegistrationDTO) {
-        try {
-            TrainerDTO savedTrainer = trainerService.registerTrainer(trainerRegistrationDTO);
-            return new ResponseEntity<>(savedTrainer, HttpStatus.CREATED);
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity<>(null, HttpStatus.CONFLICT);
-        }
+    public ResponseEntity<TrainerDTO> createTrainer(@Valid @RequestBody TrainerRegistrationDTO trainerRegistrationDTO) {
+        TrainerDTO savedTrainer = trainerService.registerTrainer(trainerRegistrationDTO);
+        return new ResponseEntity<>(savedTrainer, HttpStatus.CREATED);
     }
 
+    // --- LOGOWANIE TRENERA (ZMIANA) ---
     @PostMapping("/trainer/login")
-    public ResponseEntity<TrainerDTO> loginTrainer(@RequestBody LoginRequest loginRequest) {
-        try {
-            TrainerDTO trainer = trainerService.loginTrainer(loginRequest.getEmail(), loginRequest.getPassword());
-            return ResponseEntity.ok(trainer);
-        } catch (IllegalArgumentException e) {
-            // Jeśli hasło lub email są złe, zwracamy 401 Unauthorized
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        }
+    public ResponseEntity<AuthResponse> loginTrainer(@RequestBody LoginRequest loginRequest) {
+        TrainerDTO trainer = trainerService.loginTrainer(loginRequest.getEmail(), loginRequest.getPassword());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(trainer.getEmail());
+        String token = jwtService.generateToken(userDetails);
+
+        return ResponseEntity.ok(new AuthResponse(
+                token,
+                "TRAINER",
+                trainer.getId(),
+                trainer.getFirstName(),
+                trainer.getLastName()
+        ));
     }
 }

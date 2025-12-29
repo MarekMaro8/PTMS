@@ -3,6 +3,8 @@ package com.MarekMaro8.ptms.model;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "sessions")
@@ -21,10 +23,20 @@ public class Session {
     @JoinColumn(name = "client_id")
     private Client client;
 
+    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SessionExercise> sessionExercises = new ArrayList<>();
+
+
     private String notes;
     private LocalDateTime startTime;
     private LocalDateTime endTime; // Dodano, żeby liczyć czas trwania
-    private boolean completed = false; // Ustawiono wartość domyślną
+    private boolean completed = false;// Ustawiono wartość domyślną
+
+    //Wellness metryki opcjonalne dla sesji - mogą być null
+    private Integer energyLevel;
+    private Integer sleepQuality;
+    private Integer stressLevel;
+    private Double bodyWeight;
 
     public Session() {
     }
@@ -34,6 +46,19 @@ public class Session {
         this.startTime = startTime;
         this.endTime = endTime;
         this.completed = completed;
+    }
+
+    public void addSessionExercise(SessionExercise exercise) {
+        this.sessionExercises.add(exercise);
+        exercise.setSession(this);
+    }
+
+    public List<SessionExercise> getSessionExercises() {
+        return sessionExercises;
+    }
+
+    public void setSessionExercises(List<SessionExercise> sessionExercises) {
+        this.sessionExercises = sessionExercises;
     }
 
     public Client getClient() {
@@ -89,6 +114,37 @@ public class Session {
         return id;
     }
 
+    public Integer getEnergyLevel() {
+        return energyLevel;
+    }
+
+    public void setEnergyLevel(Integer energyLevel) {
+        this.energyLevel = energyLevel;
+    }
+
+    public Integer getSleepQuality() {
+        return sleepQuality;
+    }
+
+    public void setSleepQuality(Integer sleepQuality) {
+        this.sleepQuality = sleepQuality;
+    }
+
+    public Integer getStressLevel() {
+        return stressLevel;
+    }
+
+    public void setStressLevel(Integer stressLevel) {
+        this.stressLevel = stressLevel;
+    }
+
+    public Double getBodyWeight() {
+        return bodyWeight;
+    }
+
+    public void setBodyWeight(Double bodyWeight) {
+        this.bodyWeight = bodyWeight;
+    }
 
 
     // --- Konstruktor, Gettery i Settery ---

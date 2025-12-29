@@ -3,8 +3,14 @@ package com.MarekMaro8.ptms.service;
 import com.MarekMaro8.ptms.dto.client.ClientDTO;
 import com.MarekMaro8.ptms.dto.client.ClientMapper;
 import com.MarekMaro8.ptms.dto.client.ClientRegistrationDTO;
+import com.MarekMaro8.ptms.dto.trainer.TrainerDTO;
+import com.MarekMaro8.ptms.dto.trainer.TrainerMapper;
+import com.MarekMaro8.ptms.exception.BusinessRuleException;
+import com.MarekMaro8.ptms.exception.ResourceAlreadyExistsException;
+import com.MarekMaro8.ptms.exception.ResourceNotFoundException;
 import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.repository.ClientRepository;
+import com.MarekMaro8.ptms.repository.TrainerRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,26 +19,85 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-//SERVICE - warstwa logiki biznesowej dla encji Client
 @Service
 public class ClientService {
     private final ClientRepository clientRepository;
+    private final TrainerRepository trainerRepository; // Potrzebne do walidacji emaila przy rejestracji
     private final PasswordEncoder passwordEncoder;
     private final ClientMapper clientMapper;
+    private final TrainerMapper trainerMapper; // NOWOŚĆ: Potrzebne, by klient mógł pobrać dane trenera jako DTO
 
-    // 1. Wstrzyknięcie Zależności (Dependency Injection)
-    // Spring sam dostarczy gotową implementację ClientRepository
-    public ClientService(ClientRepository clientRepository, PasswordEncoder passwordEncoder, ClientMapper clientMapper) {
-        this.clientMapper = clientMapper;
+    public ClientService(ClientRepository clientRepository,
+                         TrainerRepository trainerRepository,
+                         PasswordEncoder passwordEncoder,
+                         ClientMapper clientMapper,
+                         TrainerMapper trainerMapper) {
         this.clientRepository = clientRepository;
+        this.trainerRepository = trainerRepository;
         this.passwordEncoder = passwordEncoder;
+        this.clientMapper = clientMapper;
+        this.trainerMapper = trainerMapper;
     }
 
-    public List<ClientDTO> getClientsDtoByTrainerId(Long trainerId) {
-        return clientRepository.findAllByTrainerId(trainerId).stream()
-                .map(clientMapper::toDto)
-                .collect(Collectors.toList());
+    // =========================================================
+    // NOWE METODY "SECURITY / ME" (Używane przez ClientController)
+    // =========================================================
+
+    // 1. Pobierz MÓJ profil (bezpieczne - po emailu z tokena)
+    public ClientDTO getMyProfile(String email) {
+        Client client = clientRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", email));
+        return clientMapper.toDto(client);
     }
+
+    // 2. Pobierz profil MOJEGO trenera
+    public TrainerDTO getMyTrainer(String clientEmail) {
+        Client client = clientRepository.findByEmail(clientEmail)
+                .orElseThrow(() ->  new ResourceNotFoundException("Client", "email", clientEmail));
+
+        if (client.getTrainer() == null) {
+            return null; // Klient nie ma trenera
+        }
+        return trainerMapper.toDto(client.getTrainer());
+    }
+
+    // =========================================================
+    // STARE METODY (Używane przez AuthController - ZOSTAJĄ)
+    // =========================================================
+
+    @Transactional
+    public ClientDTO registerClient(ClientRegistrationDTO clientRegistrationDTO) {
+        // Sprawdzamy czy email wolny (w obu tabelach)
+        if (clientRepository.findByEmail(clientRegistrationDTO.getEmail()).isPresent() ||
+                trainerRepository.findByEmail(clientRegistrationDTO.getEmail()).isPresent()) {
+            throw new ResourceAlreadyExistsException("Client with email  '" + clientRegistrationDTO.getEmail() + "' already exists.");
+        }
+        // Mapowanie (Formularz -> Encja)
+        Client clientEntity = clientMapper.toEntity(clientRegistrationDTO);
+
+        // Haszowanie hasła
+        String hashedPassword = passwordEncoder.encode(clientEntity.getPassword());
+        clientEntity.setPassword(hashedPassword);
+
+        // Zapis do bazy
+        Client savedClient = clientRepository.save(clientEntity);
+        return clientMapper.toDto(savedClient);
+    }
+
+    public ClientDTO loginClient(String email, String password) {
+        Client client = clientRepository.findByEmail(email)
+                .orElseThrow(() ->  new BusinessRuleException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(password, client.getPassword())) {
+            throw new BusinessRuleException("Invalid email or password");
+        }
+        return clientMapper.toDto(client);
+    }
+
+    // =========================================================
+    // METODY POMOCNICZE / ADMINISTRACYJNE
+    // =========================================================
+
 
     public List<ClientDTO> findAllClients() {
         return clientRepository.findAll().stream()
@@ -40,37 +105,9 @@ public class ClientService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
-    public ClientDTO registerClient(ClientRegistrationDTO clientRegistrationDTO) {
-        //Sprawdzamy czy email wolny
-        if (clientRepository.findByEmail(clientRegistrationDTO.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Client with email " + clientRegistrationDTO.getEmail() + " already exists.");
-        }
-        //Mapowanie (Formularz -> Encja)
-        Client clientEntity = clientMapper.toEntity(clientRegistrationDTO);
-
-        // Pobieramy surowe hasło z encji (które włożył tam mapper), szyfrujemy i nadpisujemy
-        String hashedPassword = passwordEncoder.encode(clientEntity.getPassword());
-        clientEntity.setPassword(hashedPassword);
-
-        //Zapis do bazy
-        Client savedClient = clientRepository.save(clientEntity);
-
-        //Mapowanie zwrotne (Encja -> Wizytówka)
-        // Zwracamy obiekt bez hasła!
-        return clientMapper.toDto(savedClient);
+    public List<ClientDTO> findAllClientsWithoutTrainer() {
+        return clientRepository.findAllByTrainerIsNull().stream()
+                .map(clientMapper::toDto)
+                .collect(Collectors.toList());
     }
-
-
-
-    public ClientDTO loginClient(String email, String password) {
-        Client client = clientRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
-
-        if (!passwordEncoder.matches(password, client.getPassword())) {
-            throw new IllegalArgumentException("Invalid email or password");
-        }
-        return clientMapper.toDto(client);
-    }
-
 }

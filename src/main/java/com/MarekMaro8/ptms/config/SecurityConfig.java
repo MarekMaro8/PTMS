@@ -3,12 +3,17 @@ package com.MarekMaro8.ptms.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -17,38 +22,42 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
+
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    private final JwtAuthenticationFilter jwtAuthFilter;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. NAPRAWA CORS (Kluczowe dla Reacta)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authorize -> authorize
-                        // 2. NAPRAWA ŚCIEŻEK (używamy ** zamiast *)
-                        // Pozwala na dostęp do /api/auth/client/login, /api/auth/trainer/register itp.
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Zostaw swoją konfigurację CORS
+
+                .authorizeHttpRequests(auth -> auth
+                        // STREFA PUBLICZNA
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
-                        // Poprawione literówki (usunięte podwójne ukośniki //) i dodane **
-                        .requestMatchers(HttpMethod.POST,
-                                "/api/trainer/*/clients/**",
-                                "/api/trainer/*/assign/**").permitAll()
-
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/**").permitAll()
-
-                        .requestMatchers(HttpMethod.DELETE,
-                                "/api/trainer/*/unassign/**").permitAll()
-
+                        // STREFA PRYWATNA - Wszystko inne wymaga tokena
                         .anyRequest().authenticated()
-                );
+                )
+
+                // ZMIANA: Wyłączamy sesje (STATELESS). Backend nie zapamiętuje usera w RAM.
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // DODAJEMY FILTR: Nasz filtr JWT ma działać PRZED standardowym filtrem logowania
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 

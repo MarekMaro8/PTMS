@@ -28,7 +28,6 @@ public class WorkoutDay {
     @OneToMany(mappedBy = "workoutDay", cascade = CascadeType.ALL)
     private Set<Session> sessions = new HashSet<>();
 
-    //ToDo Musisz użyć tej metody jeśli do dnia treningowego dodajesz nowe ćwiczenie
     public void addPlanExercise(PlanExercise exercise) {
         this.planExercises.add(exercise);
         exercise.setWorkoutDay(this);
@@ -46,6 +45,10 @@ public class WorkoutDay {
     public WorkoutDay(String dayName, String focus) {
         this.dayName = dayName;
         this.focus = focus;
+    }
+
+    public Set<PlanExercise> getPlanExercises() {
+        return planExercises;
     }
 
     public String getDayName() {

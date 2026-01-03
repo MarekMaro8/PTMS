@@ -1,30 +1,27 @@
-# --- ETAP 1: Budowanie Frontendu (React) ---
+# --- ETAP 1: Frontend ---
 FROM node:20-alpine AS frontend-builder
 WORKDIR /frontend
 
-# Skrypt w Pipeline pobierze frontend do folderu ptms-frontend
-COPY ./ptms-frontend/package*.json ./
+# Szukamy folderu ptms-frontend obok folderu z backendem
+COPY ../ptms-frontend/package*.json ./
 RUN npm install
-
-COPY ./ptms-frontend ./
+COPY ../ptms-frontend ./
 RUN npm run build
 
-# --- ETAP 2: Budowanie Backend (Spring Boot) ---
+# --- ETAP 2: Backend ---
 FROM gradle:8.1.0-jdk17-alpine AS builder
 WORKDIR /app
 
-# Skrypt w Pipeline pobierze backend do folderu ptms-backend
-COPY ./ptms-backend .
+# Kopiujemy pliki z aktualnego folderu (ptms-backend)
+COPY . .
 
-# Kopiujemy zbudowany frontend do zasobów statycznych Springa
-# UWAGA: Sprawdź czy Twój React buduje do folderu 'build' czy 'dist'
+# Kopiujemy zbudowany frontend
 COPY --from=frontend-builder /frontend/build /app/src/main/resources/static
 
-# Nadajemy uprawnienie i budujemy
 RUN chmod +x gradlew
 RUN ./gradlew clean build -x test
 
-# --- ETAP 3: Uruchamianie ---
+# --- ETAP 3: Runtime ---
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/build/libs/PTMS-0.0.1-SNAPSHOT.jar app.jar

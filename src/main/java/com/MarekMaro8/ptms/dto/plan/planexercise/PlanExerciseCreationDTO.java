@@ -6,8 +6,9 @@ public class PlanExerciseCreationDTO {
     @NotBlank(message = "Exercise name is required")
     private Long exerciseId; // ZMIANA: ID zamiast Nazwy
 
-    @NotNull
+    @NotBlank(message = "Set number is required")
     private Integer sets;
+
     private String repsRange;
 
     private Integer rpe;

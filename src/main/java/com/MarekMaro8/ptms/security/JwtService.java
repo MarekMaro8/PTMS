@@ -1,4 +1,4 @@
-package com.MarekMaro8.ptms.config;
+package com.MarekMaro8.ptms.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

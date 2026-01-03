@@ -1,5 +1,7 @@
 package com.MarekMaro8.ptms.dto.session;
 
+import jakarta.validation.constraints.NotBlank;
+
 import java.util.List;
 
 public class SessionExerciseDTO {
@@ -7,7 +9,11 @@ public class SessionExerciseDTO {
 
     // Dane ze słownika (Spłaszczone dla wygody Frontendu)
     private Long exerciseId;
+
+    @NotBlank(message = "Muscle name is required")
     private String exerciseName;
+
+    @NotBlank(message = "Muscle group is required")
     private String muscleGroup;   // Opcjonalnie, żeby np. pokazać ikonkę "Nogi"
 
     // Dane z wykonania

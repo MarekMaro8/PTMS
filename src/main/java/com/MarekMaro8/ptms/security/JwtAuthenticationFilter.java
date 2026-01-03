@@ -1,4 +1,4 @@
-package com.MarekMaro8.ptms.config;
+package com.MarekMaro8.ptms.security;
 
 import com.MarekMaro8.ptms.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;

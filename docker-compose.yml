@@ -12,8 +12,6 @@ services:
       POSTGRES_DB: ptms_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: marek123
-    ports:
-      - "5432:5432" # Opcjonalne, ale przydatne do podglądu bazy
     volumes:
       - postgres_data:/var/lib/postgresql/data # Trwałość danych (nie stracisz ich po restarcie)
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -25,9 +23,10 @@ services:
 
   # 2. SERWIS BACKENDU (PTMS - Aplikacja Spring Boot)
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: marekmaro8/ptms-backend:latest
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
     container_name: ptms_backend
     ports:
       - "8080:8080"

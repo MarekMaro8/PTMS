@@ -1,6 +1,6 @@
 package com.MarekMaro8.ptms.Controller;
 
-import com.MarekMaro8.ptms.config.JwtService;
+import com.MarekMaro8.ptms.security.JwtService;
 import com.MarekMaro8.ptms.dto.AuthResponse;
 import com.MarekMaro8.ptms.dto.LoginRequest;
 import com.MarekMaro8.ptms.dto.client.ClientDTO;

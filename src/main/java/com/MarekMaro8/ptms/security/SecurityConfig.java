@@ -1,13 +1,11 @@
-package com.MarekMaro8.ptms.config;
+package com.MarekMaro8.ptms.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -40,24 +38,23 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Zostaw swoją konfigurację CORS
+                .authorizeHttpRequests(authorize -> authorize
+                        // KLUCZOWE: Te 3 ścieżki muszą być Publiczne (permitAll)
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
 
-                .authorizeHttpRequests(auth -> auth
-                        // STREFA PUBLICZNA
+                        // Twoje istniejące reguły
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
 
-                        // STREFA PRYWATNA - Wszystko inne wymaga tokena
+                        // Reszta wymaga logowania
                         .anyRequest().authenticated()
-                )
-
-                // ZMIANA: Wyłączamy sesje (STATELESS). Backend nie zapamiętuje usera w RAM.
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // DODAJEMY FILTR: Nasz filtr JWT ma działać PRZED standardowym filtrem logowania
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-
+                );
         return http.build();
     }
 

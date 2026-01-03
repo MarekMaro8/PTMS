@@ -1,46 +1,37 @@
-# docker-compose.yml (Umieść w głównym katalogu PTMS)
-
 version: '3.8'
 
 services:
-  # 1. SERWIS BAZY DANYCH (PostgreSQL)
   db:
-    image: postgres:18-alpine # Stabilny, lekki obraz DB
+    image: postgres:18-alpine
     container_name: ptms_db
     restart: always
-    environment: # Zmienne konfiguracyjne dla obrazu Postgresa
+    environment:
       POSTGRES_DB: ptms_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: marek123
     volumes:
-      - postgres_data:/var/lib/postgresql/data # Trwałość danych (nie stracisz ich po restarcie)
+      - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck: # Sprawdzenie gotowości DB
+    healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # 2. SERWIS BACKENDU (PTMS - Aplikacja Spring Boot)
   backend:
+    # Pobierze obraz, który właśnie zbudował Twój Pipeline
     image: marekmaro8/ptms-backend:latest
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
     container_name: ptms_backend
     ports:
       - "8080:8080"
     depends_on:
       db:
-        condition: service_healthy 
+        condition: service_healthy
     environment:
-      # Teraz te nazwy (klucze po lewej) idealnie pasują do tego, co wpisaliśmy w ${...} w properties
       DB_URL: jdbc:postgresql://db:5432/ptms_db
       DB_USERNAME: postgres
-      DB_PASSWORD: marek123
-
-      # Zmienna dla Hibernate
+      DB_PASSWORD: marek123 # To hasło musi pasować do tego w sekcji db
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
 
 volumes:
-  postgres_data: # Definicja wolumenu
+  postgres_data:

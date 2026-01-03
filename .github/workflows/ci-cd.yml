@@ -46,5 +46,4 @@ jobs:
           context: .
           file: ./ptms-backend/Dockerfile
           push: true
-          # Tutaj używamy Twojego loginu z Docker Hub
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/ptms-backend:latest

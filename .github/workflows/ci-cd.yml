@@ -3,15 +3,28 @@ name: PTMS CI/CD Pipeline
 on:
   push:
     branches: [ "master" ]
+  workflow_dispatch:
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      # 1. Pobieramy Backend (to repozytorium) do folderu 'ptms-backend'
+      - name: Checkout Backend
         uses: actions/checkout@v4
+        with:
+          path: ptms-backend
 
+      # 2. Pobieramy Frontend kolegi do folderu 'ptms-frontend'
+      - name: Checkout Frontend
+        uses: actions/checkout@v4
+        with:
+          repository: marekmaro8/ptms-frontend # Upewnij się, że to dokładna nazwa repo kolegi
+          path: ptms-frontend
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 3. Konfiguracja Javy
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -19,18 +32,24 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Build with Gradle
-        run: ./gradlew build -x test
+      # 4. Naprawa uprawnień do Gradle (wewnątrz folderu backendu)
+      - name: Grant execute permission for gradlew
+        run: chmod +x ptms-backend/gradlew
 
+      # 5. Logowanie do Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # 6. Budowanie obrazu (Kluczowy etap!)
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
+          # Context ustawiamy na '.', czyli folder nadrzędny,
+          # dzięki temu Docker widzi oba foldery: ptms-backend i ptms-frontend
           context: .
+          file: ./ptms-backend/Dockerfile
           push: true
-          tags: marekmaro8/ptms-backend:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/ptms-backend:latest

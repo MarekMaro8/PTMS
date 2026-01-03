@@ -2,6 +2,7 @@
 FROM node:20-alpine AS frontend-builder
 WORKDIR /frontend
 
+# Skrypt w Pipeline pobierze frontend do folderu ptms-frontend
 COPY ./ptms-frontend/package*.json ./
 RUN npm install
 
@@ -12,18 +13,20 @@ RUN npm run build
 FROM gradle:8.1.0-jdk17-alpine AS builder
 WORKDIR /app
 
-COPY . .
+# Skrypt w Pipeline pobierze backend do folderu ptms-backend
+COPY ./ptms-backend .
 
+# Kopiujemy zbudowany frontend do zasobów statycznych Springa
+# UWAGA: Sprawdź czy Twój React buduje do folderu 'build' czy 'dist'
 COPY --from=frontend-builder /frontend/build /app/src/main/resources/static
 
+# Nadajemy uprawnienie i budujemy
+RUN chmod +x gradlew
 RUN ./gradlew clean build -x test
 
-# --- ETAP 3: Uruchamianie (Runtime) ---
+# --- ETAP 3: Uruchamianie ---
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
-
-ARG JAR_FILE=build/libs/PTMS-0.0.1-SNAPSHOT.jar
-COPY --from=builder /app/${JAR_FILE} app.jar
-
+COPY --from=builder /app/build/libs/PTMS-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

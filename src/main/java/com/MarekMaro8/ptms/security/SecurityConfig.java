@@ -64,10 +64,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Dodajemy oba porty: 3000 (do deweloperki) i domyślny port 80 (do Dockera)
         configuration.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "http://localhost",
+                "http://localhost",       // Adres  frontendu w Dockerze
+                "http://localhost:3000",  // Lokalnie (npm start)
                 "http://127.0.0.1"
         ));
 

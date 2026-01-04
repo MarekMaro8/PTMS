@@ -1,25 +1,24 @@
 version: '3.8'
 
 services:
+  # 1. BAZA DANYCH
   db:
     image: postgres:18-alpine
     container_name: ptms_db
-    restart: always
     environment:
       POSTGRES_DB: ptms_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: marek123
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
 
+  # 2. BACKEND (Twoja Java)
   backend:
-    # Pobierze obraz, który właśnie zbudował Twój Pipeline
     image: marekmaro8/ptms-backend:latest
     container_name: ptms_backend
     ports:
@@ -30,8 +29,16 @@ services:
     environment:
       DB_URL: jdbc:postgresql://db:5432/ptms_db
       DB_USERNAME: postgres
-      DB_PASSWORD: marek123 # To hasło musi pasować do tego w sekcji db
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      DB_PASSWORD: marek123
+
+  # 3. FRONTEND (Twoje nowe repo)
+  frontend:
+    image: marekmaro8/ptms-frontend:latest # Pobierze obraz z nowego Pipeline'u
+    container_name: ptms_frontend
+    ports:
+      - "80:80" # Frontend będzie dostępny pod zwykłym adresem http://localhost
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

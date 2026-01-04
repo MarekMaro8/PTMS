@@ -55,6 +55,8 @@ public class SecurityConfig {
                         // Reszta wymaga logowania
                         .anyRequest().authenticated()
                 );
+        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
@@ -62,8 +64,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Zmień port, jeśli Twój React działa na innym niż 3000
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        // Dodajemy oba porty: 3000 (do deweloperki) i domyślny port 80 (do Dockera)
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "http://localhost",
+                "http://127.0.0.1"
+        ));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));

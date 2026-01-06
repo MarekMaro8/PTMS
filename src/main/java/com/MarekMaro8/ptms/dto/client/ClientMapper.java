@@ -22,9 +22,11 @@ public class ClientMapper {
                 client.getFirstName(),
                 client.getLastName(),
                 client.getEmail(),
+                client.getHealthStatus(),
                 trainerName,
                 trainerEmail,
-                trainerId
+                trainerId,
+                client.getNotes()
         );
     }
     //dto to entity

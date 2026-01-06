@@ -1,8 +1,12 @@
 package com.MarekMaro8.ptms.Controller;
 
 import com.MarekMaro8.ptms.dto.client.ClientDTO;
+import com.MarekMaro8.ptms.dto.client.HealthUpdateDTO;
+import com.MarekMaro8.ptms.dto.client.NotesUpdateDTO;
 import com.MarekMaro8.ptms.dto.trainer.TrainerDTO;
+import com.MarekMaro8.ptms.service.ClientService;
 import com.MarekMaro8.ptms.service.TrainerService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,9 +21,11 @@ import java.util.Optional;
 public class TrainerController {
 
     private final TrainerService trainerService;
+    private final ClientService clientService;
 
-    public TrainerController(TrainerService trainerService) {
+    public TrainerController(TrainerService trainerService, ClientService clientService) {
         this.trainerService = trainerService;
+        this.clientService = clientService;
     }
 
     // 1. Zalogowany trener pobiera SWÓJ profil
@@ -75,6 +81,39 @@ public class TrainerController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
     }
+    // 6. Zaktualizuj status zdrowia klienta(NP: HEALTHY,SICK,INJURED,REHABILITATION)
+    @PreAuthorize("hasRole('TRAINER')")
+    @PatchMapping("/clients/{clientEmail}/health")
+    public ResponseEntity<Void> updateClientHealth(
+            @PathVariable String clientEmail,
+            @Valid @RequestBody HealthUpdateDTO healthUpdate,
+            Principal principal) {
+
+        // principal.getName() to email zalogowanego trenera
+        clientService.updateMyHealthStatus(
+                clientEmail,
+                healthUpdate.status(),
+                principal.getName()
+        );
+
+        return ResponseEntity.ok().build();
+    }
+
+
+    // 7. Zaktualizuj notatki klienta (dla trenera)
+    @PreAuthorize("hasRole('TRAINER')")
+    @PatchMapping("/{clientId}/notes")
+    public ResponseEntity<Void> updateClientNotes(
+            @PathVariable Long clientId,
+            @Valid @RequestBody NotesUpdateDTO notesUpdate,
+            Principal principal) {
+
+        // Tutaj zakładam, że dodasz analogiczną metodę updateClientNotes do ClientService
+        // która również sprawdza relację Trener-Klient (Security Check)
+        clientService.updateClientNotesByTrainer(principal.getName(), clientId, notesUpdate.notes());
+
+        return ResponseEntity.ok().build();
+    }
 
     // Opcjonalnie: Publiczny endpoint do pobrania profilu trenera (bez logowania lub dla klienta)
     @PreAuthorize("hasRole('CLIENT')")
@@ -82,4 +121,6 @@ public class TrainerController {
     public ResponseEntity<Optional<TrainerDTO>> getPublicTrainerProfile(@PathVariable Long trainerId) {
         return ResponseEntity.ok(trainerService.getTrainerById(trainerId));
     }
+
+
 }

@@ -63,9 +63,9 @@ public class ClientService {
     @Transactional
     public ClientDTO registerClient(ClientRegistrationDTO clientRegistrationDTO) {
         // Sprawdzamy czy email wolny (w obu tabelach)
-        if (clientRepository.findByEmail(clientRegistrationDTO.getEmail()).isPresent() ||
-                trainerRepository.findByEmail(clientRegistrationDTO.getEmail()).isPresent()) {
-            throw new ResourceAlreadyExistsException("Client with email  '" + clientRegistrationDTO.getEmail() + "' already exists.");
+        if (clientRepository.findByEmail(clientRegistrationDTO.email()).isPresent() ||
+                trainerRepository.findByEmail(clientRegistrationDTO.email()).isPresent()) {
+            throw new ResourceAlreadyExistsException("Client with email  '" + clientRegistrationDTO.email() + "' already exists.");
         }
         // Mapowanie (Formularz -> Encja)
         Client clientEntity = clientMapper.toEntity(clientRegistrationDTO);

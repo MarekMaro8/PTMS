@@ -17,10 +17,10 @@ public class TrainerMapper {
 
     public Trainer toEntity(TrainerRegistrationDTO trainerRegistrationDTO) {
         Trainer trainer = new Trainer();
-        trainer.setFirstName(trainerRegistrationDTO.getFirstName());
-        trainer.setLastName(trainerRegistrationDTO.getLastName());
-        trainer.setEmail(trainerRegistrationDTO.getEmail());
-        trainer.setPassword(trainerRegistrationDTO.getPassword());
+        trainer.setFirstName(trainerRegistrationDTO.firstName());
+        trainer.setLastName(trainerRegistrationDTO.lastName());
+        trainer.setEmail(trainerRegistrationDTO.email());
+        trainer.setPassword(trainerRegistrationDTO.password());
         return trainer;
     }
 

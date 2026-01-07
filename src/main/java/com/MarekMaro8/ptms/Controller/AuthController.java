@@ -43,9 +43,9 @@ public class AuthController {
     // --- LOGOWANIE KLIENTA (ZMIANA) ---
     @PostMapping("/client/login")
     public ResponseEntity<AuthResponse> loginClient(@RequestBody LoginRequest loginRequest) {
-        ClientDTO client = clientService.loginClient(loginRequest.getEmail(), loginRequest.getPassword());
+        ClientDTO client = clientService.loginClient(loginRequest.email(), loginRequest.password());
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(client.getEmail());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(client.email());
         String token = jwtService.generateToken(userDetails);
 
         // 3. ZMIANA: Tworzymy AuthResponse przekazując ID i Imię z obiektu client
@@ -53,9 +53,9 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse(
                 token,
                 "CLIENT",
-                client.getId(),
-                client.getFirstName(),
-                client.getLastName()
+                client.id(),
+                client.firstName(),
+                client.lastName()
         ));
     }
 
@@ -69,16 +69,16 @@ public class AuthController {
     // --- LOGOWANIE TRENERA (ZMIANA) ---
     @PostMapping("/trainer/login")
     public ResponseEntity<AuthResponse> loginTrainer(@RequestBody LoginRequest loginRequest) {
-        TrainerDTO trainer = trainerService.loginTrainer(loginRequest.getEmail(), loginRequest.getPassword());
-        UserDetails userDetails = userDetailsService.loadUserByUsername(trainer.getEmail());
+        TrainerDTO trainer = trainerService.loginTrainer(loginRequest.email(), loginRequest.password());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(trainer.email());
         String token = jwtService.generateToken(userDetails);
 
         return ResponseEntity.ok(new AuthResponse(
                 token,
                 "TRAINER",
-                trainer.getId(),
-                trainer.getFirstName(),
-                trainer.getLastName()
+                trainer.id(),
+                trainer.firstName(),
+                trainer.lastName()
         ));
     }
 }

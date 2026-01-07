@@ -32,10 +32,10 @@ public class ClientMapper {
     //dto to entity
     public Client toEntity(ClientRegistrationDTO registrationDto) {
         Client client = new Client();
-        client.setFirstName(registrationDto.getFirstName());
-        client.setLastName(registrationDto.getLastName());
-        client.setEmail(registrationDto.getEmail());
-        client.setPassword(registrationDto.getPassword());
+        client.setFirstName(registrationDto.firstName());
+        client.setLastName(registrationDto.lastName());
+        client.setEmail(registrationDto.email());
+        client.setPassword(registrationDto.password());
 
         return client;
     }

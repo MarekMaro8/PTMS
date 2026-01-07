@@ -31,8 +31,8 @@ public class ExerciseService {
 
     @Transactional
     public ExerciseDTO createExercise(ExerciseCreationDTO creationDto) {
-        if (exerciseRepository.existsByName(creationDto.getName())) {
-            throw new ResourceAlreadyExistsException("Exercise with name '" + creationDto.getName() + "' already exists.");
+        if (exerciseRepository.existsByName(creationDto.name())) {
+            throw new ResourceAlreadyExistsException("Exercise with name '" + creationDto.name() + "' already exists.");
         }
 
         Exercise exercise = exerciseMapper.toEntity(creationDto);

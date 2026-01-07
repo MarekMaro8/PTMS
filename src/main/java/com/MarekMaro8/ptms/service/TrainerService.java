@@ -113,9 +113,9 @@ public class TrainerService {
 
     @Transactional
     public TrainerDTO registerTrainer(TrainerRegistrationDTO dto) {
-        if (trainerRepository.findByEmail(dto.getEmail()).isPresent() ||
-                clientRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new ResourceAlreadyExistsException("Trainer with email '" + dto.getEmail() + "' already exists.");
+        if (trainerRepository.findByEmail(dto.email()).isPresent() ||
+                clientRepository.findByEmail(dto.email()).isPresent()) {
+            throw new ResourceAlreadyExistsException("Trainer with email '" + dto.email() + "' already exists.");
         }
 
         Trainer trainer = trainerMapper.toEntity(dto);

@@ -64,7 +64,7 @@ public class WorkoutDayService {
         // Security Check (przez plan)
         validateTrainerAccessToPlan(trainerEmail, day.getWorkoutPlan().getId());
 
-        if (exerciseData.getExerciseId() == null) {
+        if (exerciseData.exerciseId() == null) {
             throw new BusinessRuleException("Exercise ID must be provided.");
         }
 

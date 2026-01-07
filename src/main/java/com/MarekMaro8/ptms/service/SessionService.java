@@ -58,10 +58,13 @@ public class SessionService {
         newSession.setClient(client);
         newSession.setWorkoutDay(workoutDay);
         newSession.setStartTime(LocalDateTime.now());
-        newSession.setNotes(requestDto.getNotes());
-        // ... setEnergy, Sleep, Stress itd.
+        newSession.setNotes(requestDto.notes());
+        newSession.setEnergyLevel(requestDto.energyLevel());
+        newSession.setSleepQuality(requestDto.sleepQuality());
+        newSession.setStressLevel(requestDto.stressLevel());
+        newSession.setBodyWeight(requestDto.bodyWeight());
 
-        // Kopiowanie ćwiczeń
+
         if (workoutDay.getPlanExercises() != null) {
             int order = 1;
             for (PlanExercise planEx : workoutDay.getPlanExercises()) {
@@ -110,9 +113,9 @@ public class SessionService {
         }
 
         SessionSet newSet = new SessionSet();
-        newSet.setReps(setDto.getReps());   // Bierzemy z SessionSetDTO
-        newSet.setWeight(setDto.getWeight()); // Bierzemy z SessionSetDTO
-        newSet.setRpe(setDto.getRpe());       // Bierzemy z SessionSetDTO
+        newSet.setReps(setDto.reps());   // Bierzemy z SessionSetDTO
+        newSet.setWeight(setDto.weight()); // Bierzemy z SessionSetDTO
+        newSet.setRpe(setDto.rpe());       // Bierzemy z SessionSetDTO
 
         sessionExercise.addSet(newSet);
         sessionSetRepository.save(newSet);

@@ -50,12 +50,9 @@ public class ClientWorkoutController {
     @PatchMapping("/{sessionId}/notes")
     public ResponseEntity<Void> updateNotes(
             @PathVariable Long sessionId,
-            @RequestBody Map<String, String> body,
+            @Valid @RequestBody SessionNotesDTO notesDto,
             Principal principal) {
-
-        // Wyciągamy wartość po kluczu "notes"
-        String notes = body.get("notes");
-        sessionService.updateSessionNotes(sessionId, principal.getName(), notes);
+        sessionService.updateSessionNotes(sessionId, principal.getName(), notesDto.notes());
         return ResponseEntity.ok().build();
     }
 

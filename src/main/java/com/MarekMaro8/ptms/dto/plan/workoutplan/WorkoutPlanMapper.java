@@ -90,11 +90,11 @@ public class WorkoutPlanMapper {
         if (dto == null) return null;
 
         WorkoutPlan plan = new WorkoutPlan();
-        plan.setName(dto.getName());
-        plan.setDescription(dto.getDescription());
+        plan.setName(dto.name());
+        plan.setDescription(dto.description());
 
-        if (dto.getWorkoutDays() != null && !dto.getWorkoutDays().isEmpty()) {
-            for (WorkoutDayCreationDTO dayDto : dto.getWorkoutDays()) {
+        if (dto.workoutDays() != null && !dto.workoutDays().isEmpty()) {
+            for (WorkoutDayCreationDTO dayDto : dto.workoutDays()) {
                 WorkoutDay day = createWorkoutDayFromDto(dayDto);
                 plan.addWorkoutDay(day);
             }
@@ -104,11 +104,11 @@ public class WorkoutPlanMapper {
 
     public WorkoutDay createWorkoutDayFromDto(WorkoutDayCreationDTO dayDto) {
         WorkoutDay day = new WorkoutDay();
-        day.setDayName(dayDto.getDayName());
-        day.setFocus(dayDto.getFocus());
+        day.setDayName(dayDto.dayName());
+        day.setFocus(dayDto.focus());
 
-        if (dayDto.getExercises() != null && !dayDto.getExercises().isEmpty()) {
-            for (PlanExerciseCreationDTO exDto : dayDto.getExercises()) {
+        if (dayDto.exercises() != null && !dayDto.exercises().isEmpty()) {
+            for (PlanExerciseCreationDTO exDto : dayDto.exercises()) {
                 PlanExercise exercise = createPlanExerciseFromDto(exDto);
                 day.addPlanExercise(exercise);
             }
@@ -117,20 +117,20 @@ public class WorkoutPlanMapper {
     }
 
     // --- KLUCZOWA ZMIANA TUTAJ ---
-    public PlanExercise createPlanExerciseFromDto(PlanExerciseCreationDTO exDto) {
+    public PlanExercise createPlanExerciseFromDto(PlanExerciseCreationDTO planExerciseCreationDTO) {
         PlanExercise planExercise = new PlanExercise();
 
         // 1. Pobieramy ćwiczenie z bazy na podstawie ID przesłanego z frontendu
-        Exercise exerciseDict = exerciseRepository.findById(exDto.getExerciseId())
-                .orElseThrow(() -> new IllegalArgumentException("Exercise not found with id: " + exDto.getExerciseId()));
+        Exercise exerciseDict = exerciseRepository.findById(planExerciseCreationDTO.exerciseId())
+                .orElseThrow(() -> new IllegalArgumentException("Exercise not found with id: " + planExerciseCreationDTO.exerciseId()));
 
         // 2. Przypisujemy obiekt Exercise do PlanExercise
         planExercise.setExercise(exerciseDict);
 
         // 3. Reszta parametrów
-        planExercise.setSets(exDto.getSets());
-        planExercise.setRepsRange(exDto.getRepsRange());
-        planExercise.setRpe(exDto.getRpe());
+        planExercise.setSets(planExerciseCreationDTO.sets());
+        planExercise.setRepsRange(planExerciseCreationDTO.repsRange());
+        planExercise.setRpe(planExerciseCreationDTO.rpe());
 
         return planExercise;
     }

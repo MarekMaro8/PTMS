@@ -29,45 +29,70 @@ public class SessionMapper {
         Client client = session.getClient();
         WorkoutDay wDay = session.getWorkoutDay();
 
+        Long clientId = null;
+        String clientName = "Brak";
+
+        if(client != null){
+            clientId = client.getId();
+            clientName = client.getFirstName() + " " + client.getLastName();
+        }
+        Long workoutDayId = null;
+        String workoutDayName = "Nieznany dzień treningowy";
+        String workoutDayFocus = "Nieznany fokus";
+
+        if(wDay != null){
+            workoutDayId = wDay.getId();
+            workoutDayName = wDay.getDayName();
+            workoutDayFocus = wDay.getFocus();
+        }
+
+
         return new SessionDTO(
-                session.getId(),
                 session.getStartTime(),
                 session.getEndTime(),
                 session.isCompleted(),
                 session.getNotes(),
-                (client != null) ? client.getId() : null,
-                (client != null) ? client.getFirstName() + " " + client.getLastName() : "Brak",
-                (wDay != null) ? wDay.getId() : null,
-                (wDay != null) ? wDay.getDayName() : "Brak",
-                (wDay != null) ? wDay.getFocus() : "Brak",
+                clientId,
+                clientName,
+                workoutDayId,
+                workoutDayName,
+                workoutDayFocus,
                 session.getEnergyLevel(),
                 session.getSleepQuality(),
                 session.getStressLevel(),
                 session.getBodyWeight(),
-                exercisesDto // <-- POPRAWKA 1: Musisz dodać ten argument na końcu!
+                exercisesDto,
+                session.getId()
         );
     }
 
     // Metoda pomocnicza: SessionExercise -> SessionExerciseDTO
-    private SessionExerciseDTO toSessionExerciseDto(SessionExercise ex) {
+    private SessionExerciseDTO toSessionExerciseDto(SessionExercise sessionExercise
+    ) {
         List<SessionSetDTO> setsDto = Collections.emptyList();
-        if (ex.getSets() != null) {
-            setsDto = ex.getSets().stream()
+        if (sessionExercise.getSets() != null) {
+            setsDto = sessionExercise.getSets().stream()
                     .map(this::toSessionSetDto)
                     .collect(Collectors.toList());
         }
 
-        Long exDictId = (ex.getExercise() != null) ? ex.getExercise().getId() : null;
-        String exName = (ex.getExercise() != null) ? ex.getExercise().getName() : "Nieznane ćwiczenie";
-        String muscle = (ex.getExercise() != null) ? ex.getExercise().getMuscleGroup() : "";
+        Long exerciseId = null;
+        String exName =  "Nieznane ćwiczenie";
+        String muscle =  "";
+
+        if(sessionExercise .getExercise() == null){
+            exName = sessionExercise.getExercise().getName();
+            muscle = sessionExercise.getExercise().getMuscleGroup();
+            exerciseId = sessionExercise.getExercise().getId();
+        }
 
         return new SessionExerciseDTO(
-                ex.getId(),
-                exDictId,
+                sessionExercise.getId(),
+                exerciseId,
                 exName,
                 muscle,
-                ex.getOrderIndex(),
-                ex.getNotes(),
+                sessionExercise.getOrderIndex(),
+                sessionExercise.getNotes(),
                 setsDto
         );
     }

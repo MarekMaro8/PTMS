@@ -12,6 +12,21 @@ import java.util.Set;
 @Table(name = "clients")
 public class Client {
 
+    public HealthStatus getHealthStatus() {
+        return healthStatus;
+    }
+
+    public void setHealthStatus(HealthStatus healthStatus) {
+        this.healthStatus = healthStatus;
+    }
+
+    public enum HealthStatus {
+        HEALTHY,      // Zdrowy
+        SICK,         // Chory
+        INJURED,      // Kontuzja
+        REHABILITATION // Rehabilitacja
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -33,6 +48,12 @@ public class Client {
     private String firstName;
     private String lastName;
 
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
+    @Enumerated(EnumType.STRING) // Zapisujemy w bazie jako tekst (np. "HEALTHY")
+    private HealthStatus healthStatus = HealthStatus.HEALTHY; // Domyślnie zdrowy
+
     @Email(message = "Email should be valid")
     @Column(nullable = false, unique = true)
     private String email;
@@ -43,11 +64,11 @@ public class Client {
     public Client() {
     }
 
-    public Client(String firstName, String lastName, String email) {
+    public Client(String firstName, String lastName, String email, String notes ) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
-
+        this.notes = notes;
     }
 
     // Musisz użyć tej metody, gdy Trener przypisuje Klientowi nowy Plan
@@ -116,5 +137,13 @@ public class Client {
 
     public Set<WorkoutPlan> getWorkoutPlans() {
         return workoutPlans;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
     }
 }

@@ -22,8 +22,8 @@ public class ExerciseMapper {
         if (dto == null) return null;
 
         return new Exercise(
-                dto.getName(),
-                dto.getMuscleGroup()
+                dto.name(),
+                dto.muscleGroup()
         );
     }
 }

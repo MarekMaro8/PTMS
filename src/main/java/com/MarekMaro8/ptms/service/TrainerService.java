@@ -40,9 +40,6 @@ public class TrainerService {
         this.clientMapper = clientMapper;
     }
 
-    // =========================================================
-    // NOWE METODY "SECURITY / ME" (Używane przez TrainerController)
-    // =========================================================
 
     // 1. Pobierz profil zalogowanego trenera
     public TrainerDTO getMyProfile(String email) {
@@ -114,15 +111,11 @@ public class TrainerService {
         }
     }
 
-    // =========================================================
-    // STARE METODY (Używane przez AuthController - ZOSTAJĄ)
-    // =========================================================
-
     @Transactional
     public TrainerDTO registerTrainer(TrainerRegistrationDTO dto) {
-        if (trainerRepository.findByEmail(dto.getEmail()).isPresent() ||
-                clientRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new ResourceAlreadyExistsException("Trainer with email '" + dto.getEmail() + "' already exists.");
+        if (trainerRepository.findByEmail(dto.email()).isPresent() ||
+                clientRepository.findByEmail(dto.email()).isPresent()) {
+            throw new ResourceAlreadyExistsException("Trainer with email '" + dto.email() + "' already exists.");
         }
 
         Trainer trainer = trainerMapper.toEntity(dto);
@@ -142,6 +135,7 @@ public class TrainerService {
         }
         return trainerMapper.toDto(trainer);
     }
+
 
     // Metoda pomocnicza (np. dla widoku publicznego profilu)
     public Optional<TrainerDTO> getTrainerById(Long trainerId) {

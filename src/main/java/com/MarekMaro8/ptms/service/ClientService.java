@@ -9,6 +9,8 @@ import com.MarekMaro8.ptms.exception.BusinessRuleException;
 import com.MarekMaro8.ptms.exception.ResourceAlreadyExistsException;
 import com.MarekMaro8.ptms.exception.ResourceNotFoundException;
 import com.MarekMaro8.ptms.model.Client;
+import com.MarekMaro8.ptms.model.Session;
+import com.MarekMaro8.ptms.model.Trainer;
 import com.MarekMaro8.ptms.repository.ClientRepository;
 import com.MarekMaro8.ptms.repository.TrainerRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,9 +41,6 @@ public class ClientService {
         this.trainerMapper = trainerMapper;
     }
 
-    // =========================================================
-    // NOWE METODY "SECURITY / ME" (Używane przez ClientController)
-    // =========================================================
 
     // 1. Pobierz MÓJ profil (bezpieczne - po emailu z tokena)
     public ClientDTO getMyProfile(String email) {
@@ -61,16 +60,12 @@ public class ClientService {
         return trainerMapper.toDto(client.getTrainer());
     }
 
-    // =========================================================
-    // STARE METODY (Używane przez AuthController - ZOSTAJĄ)
-    // =========================================================
-
     @Transactional
     public ClientDTO registerClient(ClientRegistrationDTO clientRegistrationDTO) {
         // Sprawdzamy czy email wolny (w obu tabelach)
-        if (clientRepository.findByEmail(clientRegistrationDTO.getEmail()).isPresent() ||
-                trainerRepository.findByEmail(clientRegistrationDTO.getEmail()).isPresent()) {
-            throw new ResourceAlreadyExistsException("Client with email  '" + clientRegistrationDTO.getEmail() + "' already exists.");
+        if (clientRepository.findByEmail(clientRegistrationDTO.email()).isPresent() ||
+                trainerRepository.findByEmail(clientRegistrationDTO.email()).isPresent()) {
+            throw new ResourceAlreadyExistsException("Client with email  '" + clientRegistrationDTO.email() + "' already exists.");
         }
         // Mapowanie (Formularz -> Encja)
         Client clientEntity = clientMapper.toEntity(clientRegistrationDTO);
@@ -93,6 +88,39 @@ public class ClientService {
         }
         return clientMapper.toDto(client);
     }
+
+
+    // NOTATKI
+    @Transactional
+    public void updateClientNotesByTrainer(String trainerEmail, Long clientId, String newNotes) {
+        Trainer trainer = trainerRepository.findByEmail(trainerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Trainer", "email", trainerEmail));
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
+
+        if (client.getTrainer() == null || !client.getTrainer().getId().equals(trainer.getId())) {
+            throw new BusinessRuleException("Trainer is not assigned to this client.");
+        }
+
+        client.setNotes(newNotes);
+        clientRepository.save(client);
+    }
+
+    @Transactional
+    public void updateMyHealthStatus(String clientEmail, Client.HealthStatus status, String trainerEmail) {
+        Trainer trainer = trainerRepository.findByEmail(trainerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Trainer", "email", trainerEmail));
+        Client client = clientRepository.findByEmail(clientEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", clientEmail));
+
+        if (client.getTrainer() == null || !client.getTrainer().getId().equals(trainer.getId())) {
+            throw new BusinessRuleException("Trainer is not assigned to this client.");
+        }
+
+        client.setHealthStatus(status);
+        clientRepository.save(client);
+    }
+
 
     // =========================================================
     // METODY POMOCNICZE / ADMINISTRACYJNE

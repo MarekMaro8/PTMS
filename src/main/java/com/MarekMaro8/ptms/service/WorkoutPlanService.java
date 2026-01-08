@@ -113,9 +113,9 @@ public class WorkoutPlanService {
     }
 
     private boolean isWorkoutPlanReady(WorkoutPlanCreationDTO creationDto) {
-        if (creationDto.getWorkoutDays() == null || creationDto.getWorkoutDays().isEmpty()) return false;
-        return creationDto.getWorkoutDays().stream()
-                .anyMatch(day -> day.getExercises() != null && !day.getExercises().isEmpty());
+        if (creationDto.workoutDays() == null || creationDto.workoutDays().isEmpty()) return false;
+        return creationDto.workoutDays().stream()
+                .anyMatch(day -> day.exercises() != null && !day.exercises().isEmpty());
     }
 
     private void deactivateCurrentWorkoutPlan(Long clientId) {

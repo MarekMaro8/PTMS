@@ -7,6 +7,7 @@ import com.MarekMaro8.ptms.dto.plan.workoutday.WorkoutDayDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanMapper;
 import com.MarekMaro8.ptms.exception.BusinessRuleException;
 import com.MarekMaro8.ptms.exception.ResourceNotFoundException;
+import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.model.PlanExercise;
 import com.MarekMaro8.ptms.model.Trainer;
 import com.MarekMaro8.ptms.model.WorkoutDay;
@@ -27,7 +28,7 @@ public class WorkoutDayService {
     private final WorkoutPlanRepository workoutPlanRepository;
     private final WorkoutDayRepository workoutDayRepository;
     private final PlanExerciseRepository planExerciseRepository;
-    private final TrainerRepository trainerRepository; // Dodano
+    private final TrainerRepository trainerRepository;
     private final WorkoutPlanMapper workoutPlanMapper;
 
     public WorkoutDayService(WorkoutPlanRepository workoutPlanRepository,
@@ -42,8 +43,13 @@ public class WorkoutDayService {
         this.workoutPlanMapper = workoutPlanMapper;
     }
 
+    // =================================================================================
+    // CZĘŚĆ 1: METODY DLA TRENERA (Tworzenie, Edycja, Podgląd Klienta)
+    // =================================================================================
+
     @Transactional
     public WorkoutDayDTO createWorkoutDayWithExercises(String trainerEmail, Long planId, WorkoutDayCreationDTO dayData) {
+        // Security: Sprawdzamy, czy plan należy do klienta tego trenera
         validateTrainerAccessToPlan(trainerEmail, planId);
 
         WorkoutPlan plan = workoutPlanRepository.findById(planId).orElseThrow();
@@ -73,31 +79,77 @@ public class WorkoutDayService {
         return workoutPlanMapper.toPlanExerciseDto(savedExercise);
     }
 
+    // TRENER: Pobierz konkretny dzień z planu KLIENTA
     @Transactional(readOnly = true)
-    public List<WorkoutDayDTO> findAllByWorkoutPlanId(Long planId) {
+    public WorkoutDayDTO getClientDayById(String trainerEmail, Long dayId) {
+        WorkoutDay day = workoutDayRepository.findById(dayId)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkoutDay", "id", dayId));
+
+        // Walidacja dostępu
+        validateTrainerAccessToPlan(trainerEmail, day.getWorkoutPlan().getId());
+
+        return workoutPlanMapper.toWorkoutDayDto(day);
+    }
+
+    // TRENER: Pobierz listę dni z planu KLIENTA
+    @Transactional(readOnly = true)
+    public List<WorkoutDayDTO> getClientDaysByPlanId(String trainerEmail, Long planId) {
+        validateTrainerAccessToPlan(trainerEmail, planId);
+
         return workoutDayRepository.findAllByWorkoutPlanId(planId).stream()
                 .map(workoutPlanMapper::toWorkoutDayDto)
                 .collect(Collectors.toList());
     }
 
+    // =================================================================================
+    // CZĘŚĆ 2: METODY DLA KLIENTA (Mój Profil)
+    // =================================================================================
+
+    // KLIENT: Pobierz MÓJ konkretny dzień (żeby zobaczyć szczegóły przed treningiem)
     @Transactional(readOnly = true)
-    public WorkoutDayDTO getWorkoutDayById(Long dayId) {
+    public WorkoutDayDTO getMyDayById(String clientEmail, Long dayId) {
         WorkoutDay day = workoutDayRepository.findById(dayId)
                 .orElseThrow(() -> new ResourceNotFoundException("WorkoutDay", "id", dayId));
+
+        // Security: Czy ten dzień należy do mojego planu?
+        if (!day.getWorkoutPlan().getClient().getEmail().equals(clientEmail)) {
+            throw new BusinessRuleException("Nie masz dostępu do tego dnia treningowego.");
+        }
 
         return workoutPlanMapper.toWorkoutDayDto(day);
     }
 
-
-    // --- POMOCNICZE ---
-    private void validateTrainerAccessToPlan(String trainerEmail, Long planId) {
-        Trainer trainer = trainerRepository.findByEmail(trainerEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Trainer", "email", trainerEmail));
+    // KLIENT: Pobierz dni z MOJEGO planu
+    @Transactional(readOnly = true)
+    public List<WorkoutDayDTO> getMyDaysByPlanId(String clientEmail, Long planId) {
         WorkoutPlan plan = workoutPlanRepository.findById(planId)
                 .orElseThrow(() -> new ResourceNotFoundException("Plan", "id", planId));
 
-        if (plan.getClient() == null || !plan.getClient().getTrainer().equals(trainer)) {
-            throw  new BusinessRuleException("Access denied: You do not have permission to modify this workout plan.");
+        // Security: Czy ten plan jest mój?
+        if (!plan.getClient().getEmail().equals(clientEmail)) {
+            throw new BusinessRuleException("To nie jest Twój plan treningowy.");
+        }
+
+        return workoutDayRepository.findAllByWorkoutPlanId(planId).stream()
+                .map(workoutPlanMapper::toWorkoutDayDto)
+                .collect(Collectors.toList());
+    }
+
+    // =================================================================================
+    // METODY POMOCNICZE
+    // =================================================================================
+
+    private void validateTrainerAccessToPlan(String trainerEmail, Long planId) {
+        Trainer trainer = trainerRepository.findByEmail(trainerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Trainer", "email", trainerEmail));
+
+        WorkoutPlan plan = workoutPlanRepository.findById(planId)
+                .orElseThrow(() -> new ResourceNotFoundException("Plan", "id", planId));
+
+        Client planOwner = plan.getClient();
+
+        if (planOwner == null || planOwner.getTrainer() == null || !planOwner.getTrainer().equals(trainer)) {
+            throw new BusinessRuleException("Nie masz uprawnień do edycji tego planu (to nie Twój klient).");
         }
     }
 }

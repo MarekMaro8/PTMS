@@ -93,6 +93,7 @@ public class TrainerController {
             @Valid @RequestBody HealthUpdateDTO healthUpdate,
             Principal principal) {
 
+        // principal.getName() to email zalogowanego trenera
         clientService.updateMyHealthStatus(
                 clientEmail,
                 healthUpdate.status(),
@@ -142,7 +143,6 @@ public class TrainerController {
     public ResponseEntity<Optional<TrainerDTO>> getPublicTrainerProfile(@PathVariable Long trainerId) {
         return ResponseEntity.ok(trainerService.getTrainerById(trainerId));
     }
-
 
 
 }

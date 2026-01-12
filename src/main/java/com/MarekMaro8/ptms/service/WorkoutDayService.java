@@ -80,6 +80,15 @@ public class WorkoutDayService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public WorkoutDayDTO getWorkoutDayById(Long dayId) {
+        WorkoutDay day = workoutDayRepository.findById(dayId)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkoutDay", "id", dayId));
+
+        return workoutPlanMapper.toWorkoutDayDto(day);
+    }
+
+
     // --- POMOCNICZE ---
     private void validateTrainerAccessToPlan(String trainerEmail, Long planId) {
         Trainer trainer = trainerRepository.findByEmail(trainerEmail)

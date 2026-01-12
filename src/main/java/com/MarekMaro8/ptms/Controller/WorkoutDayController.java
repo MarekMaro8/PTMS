@@ -54,4 +54,11 @@ public class WorkoutDayController {
     public ResponseEntity<List<WorkoutDayDTO>> getDaysByPlan(@PathVariable Long planId) {
         return ResponseEntity.ok(workoutDayService.findAllByWorkoutPlanId(planId));
     }
+
+    // 4. Pobierz szczegóły konkretnego dnia
+    @PreAuthorize("hasAnyRole('TRAINER', 'CLIENT')")
+    @GetMapping("/{dayId}")
+    public ResponseEntity<WorkoutDayDTO> getWorkoutDay(@PathVariable Long dayId) {
+        return ResponseEntity.ok(workoutDayService.getWorkoutDayById(dayId));
+    }
 }

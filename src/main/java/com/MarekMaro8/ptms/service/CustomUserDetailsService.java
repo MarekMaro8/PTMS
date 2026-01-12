@@ -26,17 +26,14 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // 1. Najpierw sprawdzamy, czy to Trener
         Optional<Trainer> trainer = trainerRepository.findByEmail(email);
         if (trainer.isPresent()) {
             return User.builder()
                     .username(trainer.get().getEmail())
-                    .password(trainer.get().getPassword()) // Hasło musi być zakodowane w bazie!
+                    .password(trainer.get().getPassword())
                     .roles("TRAINER") // Spring automatycznie doda prefiks "ROLE_", więc będzie "ROLE_TRAINER"
                     .build();
         }
-
-        // 2. Jeśli nie Trener, to sprawdzamy czy to Klient
         Optional<Client> client = clientRepository.findByEmail(email);
         if (client.isPresent()) {
             return User.builder()
@@ -45,8 +42,6 @@ public class CustomUserDetailsService implements UserDetailsService {
                     .roles("CLIENT") // Będzie "ROLE_CLIENT"
                     .build();
         }
-
-        // 3. Jak nigdzie nie ma -> Błąd
         throw new UsernameNotFoundException("Nie znaleziono użytkownika o emailu: " + email);
     }
 }

@@ -44,7 +44,6 @@ public class WorkoutDayService {
 
     @Transactional
     public WorkoutDayDTO createWorkoutDayWithExercises(String trainerEmail, Long planId, WorkoutDayCreationDTO dayData) {
-        // Security Check
         validateTrainerAccessToPlan(trainerEmail, planId);
 
         WorkoutPlan plan = workoutPlanRepository.findById(planId).orElseThrow();
@@ -61,7 +60,6 @@ public class WorkoutDayService {
         WorkoutDay day = workoutDayRepository.findById(dayId)
                 .orElseThrow(() -> new ResourceNotFoundException("Workoutday", "id", dayId));
 
-        // Security Check (przez plan)
         validateTrainerAccessToPlan(trainerEmail, day.getWorkoutPlan().getId());
 
         if (exerciseData.exerciseId() == null) {
@@ -77,7 +75,6 @@ public class WorkoutDayService {
 
     @Transactional(readOnly = true)
     public List<WorkoutDayDTO> findAllByWorkoutPlanId(Long planId) {
-        // Tu można zostawić publiczne lub dodać security, zależnie od potrzeb
         return workoutDayRepository.findAllByWorkoutPlanId(planId).stream()
                 .map(workoutPlanMapper::toWorkoutDayDto)
                 .collect(Collectors.toList());

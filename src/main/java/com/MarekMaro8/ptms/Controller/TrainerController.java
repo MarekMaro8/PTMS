@@ -3,8 +3,10 @@ package com.MarekMaro8.ptms.Controller;
 import com.MarekMaro8.ptms.dto.client.ClientDTO;
 import com.MarekMaro8.ptms.dto.client.HealthUpdateDTO;
 import com.MarekMaro8.ptms.dto.client.NotesUpdateDTO;
+import com.MarekMaro8.ptms.dto.session.SessionDTO;
 import com.MarekMaro8.ptms.dto.trainer.TrainerDTO;
 import com.MarekMaro8.ptms.service.ClientService;
+import com.MarekMaro8.ptms.service.SessionService;
 import com.MarekMaro8.ptms.service.TrainerService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -22,10 +24,12 @@ public class TrainerController {
 
     private final TrainerService trainerService;
     private final ClientService clientService;
+    private final SessionService sessionService;
 
-    public TrainerController(TrainerService trainerService, ClientService clientService) {
+    public TrainerController(TrainerService trainerService, ClientService clientService, SessionService sessionService) {
         this.trainerService = trainerService;
         this.clientService = clientService;
+        this.sessionService = sessionService;
     }
 
     // 1. Zalogowany trener pobiera SWÓJ profil
@@ -89,7 +93,6 @@ public class TrainerController {
             @Valid @RequestBody HealthUpdateDTO healthUpdate,
             Principal principal) {
 
-        // principal.getName() to email zalogowanego trenera
         clientService.updateMyHealthStatus(
                 clientEmail,
                 healthUpdate.status(),
@@ -107,13 +110,31 @@ public class TrainerController {
             @PathVariable Long clientId,
             @Valid @RequestBody NotesUpdateDTO notesUpdate,
             Principal principal) {
-
-        // Tutaj zakładam, że dodasz analogiczną metodę updateClientNotes do ClientService
-        // która również sprawdza relację Trener-Klient (Security Check)
         clientService.updateClientNotesByTrainer(principal.getName(), clientId, notesUpdate.notes());
 
         return ResponseEntity.ok().build();
     }
+    // 8. Pobierz historię sesji konkretnego klienta (dla trenera)
+    @PreAuthorize("hasRole('TRAINER')")
+    @GetMapping("/client/{clientId}/history")
+    public ResponseEntity<List<SessionDTO>> getClientHistory(@PathVariable Long clientId) {
+        return ResponseEntity.ok(sessionService.getClientHistoryForTrainer(clientId));
+    }
+
+    // 9. Pobierz aktywną sesję konkretnego klienta (dla trenera)
+    @PreAuthorize("hasRole('TRAINER')")
+    @GetMapping("/clients/{clientId}/active-session")
+    public ResponseEntity<SessionDTO> getClientActiveSession(@PathVariable Long clientId, Principal principal) {
+        SessionDTO activeSession = sessionService.getClientActiveSessionForTrainer(principal.getName(), clientId);
+
+        if (activeSession == null) {
+            return ResponseEntity.noContent().build(); // 204 No Content (Klient teraz nie ćwiczy - to normalne)
+        }
+
+        return ResponseEntity.ok(activeSession); // 200 OK + dane sesji
+    }
+
+
 
     // Opcjonalnie: Publiczny endpoint do pobrania profilu trenera (bez logowania lub dla klienta)
     @PreAuthorize("hasRole('CLIENT')")
@@ -121,6 +142,7 @@ public class TrainerController {
     public ResponseEntity<Optional<TrainerDTO>> getPublicTrainerProfile(@PathVariable Long trainerId) {
         return ResponseEntity.ok(trainerService.getTrainerById(trainerId));
     }
+
 
 
 }

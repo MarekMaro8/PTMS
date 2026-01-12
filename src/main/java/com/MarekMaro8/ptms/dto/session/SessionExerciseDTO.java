@@ -8,10 +8,10 @@ public record SessionExerciseDTO (
 
     Long id,
 
-    // Dane ze słownika (Spłaszczone dla wygody Frontendu)
+    @NotBlank(message = "Exercise ID is required")
     Long exerciseId,
 
-    @NotBlank(message = "Muscle name is required")
+    @NotBlank(message = "Exercise name is required")
     String exerciseName,
 
     @NotBlank(message = "Muscle group is required")

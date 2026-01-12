@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record SessionDTO (
+        
      LocalDateTime startTime,
      LocalDateTime endTime,
      boolean completed,

@@ -9,20 +9,20 @@ import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.model.Trainer;
 import com.MarekMaro8.ptms.model.WorkoutPlan;
 import com.MarekMaro8.ptms.repository.ClientRepository;
-import com.MarekMaro8.ptms.repository.TrainerRepository; // Dodano
+import com.MarekMaro8.ptms.repository.TrainerRepository;
 import com.MarekMaro8.ptms.repository.WorkoutPlanRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class WorkoutPlanService {
+
     private final WorkoutPlanRepository workoutPlanRepository;
     private final ClientRepository clientRepository;
-    private final TrainerRepository trainerRepository; // Dodano
+    private final TrainerRepository trainerRepository;
     private final WorkoutPlanMapper workoutPlanMapper;
 
     public WorkoutPlanService(WorkoutPlanRepository workoutPlanRepository,
@@ -35,13 +35,14 @@ public class WorkoutPlanService {
         this.workoutPlanMapper = workoutPlanMapper;
     }
 
-    // --- DLA TRENERA ---
+    // =================================================================================
+    // CZĘŚĆ 1: METODY DLA TRENERA (Zarządzanie planami klientów)
+    // =================================================================================
 
+    // 1. Tworzenie planu
     @Transactional
     public WorkoutPlanDTO createNewWorkoutPlan(String trainerEmail, Long clientId, WorkoutPlanCreationDTO creationDto) {
-        // Security Check: Czy to Twój klient?
         Client client = validateTrainerAccess(trainerEmail, clientId);
-
         WorkoutPlan newWorkoutPlan = workoutPlanMapper.toEntity(creationDto);
 
         if (isWorkoutPlanReady(creationDto)) {
@@ -54,51 +55,81 @@ public class WorkoutPlanService {
         return workoutPlanMapper.toDto(savedPlan);
     }
 
+    // 2. Aktywacja planu
     @Transactional
     public WorkoutPlanDTO activatePlan(String trainerEmail, Long planId) {
         WorkoutPlan planToActivate = workoutPlanRepository.findById(planId)
                 .orElseThrow(() -> new ResourceNotFoundException("WorkoutPlan", "id", planId));
 
-        // Security Check
         validateTrainerAccess(trainerEmail, planToActivate.getClient().getId());
 
         deactivateCurrentWorkoutPlan(planToActivate.getClient().getId());
         planToActivate.setIsActive(true);
-        workoutPlanRepository.save(planToActivate);
-        return workoutPlanMapper.toDto(planToActivate);
+
+        return workoutPlanMapper.toDto(workoutPlanRepository.save(planToActivate));
     }
 
+    // 3. [ODCZYT] Wszystkie plany konkretnego klienta
+    @Transactional(readOnly = true)
     public List<WorkoutPlanDTO> getAllPlansForClient(String trainerEmail, Long clientId) {
         validateTrainerAccess(trainerEmail, clientId);
+
         return workoutPlanRepository.findAllByClientId(clientId).stream()
                 .map(workoutPlanMapper::toDto)
                 .collect(Collectors.toList());
     }
 
-    // --- DLA KLIENTA (/ME) ---
+    // 4. [ODCZYT] Aktywny plan konkretnego klienta (NOWA METODA)
+    @Transactional(readOnly = true)
+    public WorkoutPlanDTO getClientActivePlan(String trainerEmail, Long clientId) {
+        validateTrainerAccess(trainerEmail, clientId);
 
+        WorkoutPlan activePlan = workoutPlanRepository.findByClientIdAndIsActiveTrue(clientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Active plan not found ", "client id", clientId));
+
+        return workoutPlanMapper.toDto(activePlan);
+    }
+
+    // =================================================================================
+    // CZĘŚĆ 2: METODY DLA KLIENTA (Mój profil)
+    // =================================================================================
+
+    // 1. [ODCZYT] Mój aktywny plan
     @Transactional(readOnly = true)
     public WorkoutPlanDTO getMyActivePlan(String clientEmail) {
-        Client client = clientRepository.findByEmail(clientEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", clientEmail));
+        Client client = getClientByEmail(clientEmail);
 
         WorkoutPlan plan = workoutPlanRepository.findByClientIdAndIsActiveTrue(client.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Active workoutPlan", "client mail", clientEmail));
+                .orElseThrow(() -> new ResourceNotFoundException("Active plan not found ", "client id", client.getId()));
 
         return workoutPlanMapper.toDto(plan);
     }
 
+    // 2. [ODCZYT] Moja historia planów (Wszystkie moje plany)
     @Transactional(readOnly = true)
     public List<WorkoutPlanDTO> getMyAllPlans(String clientEmail) {
-        Client client = clientRepository.findByEmail(clientEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", clientEmail));
+        Client client = getClientByEmail(clientEmail);
 
         return workoutPlanRepository.findAllByClientId(client.getId()).stream()
                 .map(workoutPlanMapper::toDto)
                 .collect(Collectors.toList());
     }
 
-    // --- POMOCNICZE ---
+    // Opcjonalnie: Mój konkretny plan po ID (jeśli klient chce wejść w szczegóły historii)
+    @Transactional(readOnly = true)
+    public WorkoutPlanDTO getMyPlanById(String clientEmail, Long planId) {
+        WorkoutPlan plan = workoutPlanRepository.findById(planId)
+                .orElseThrow(() -> new ResourceNotFoundException("Plan", "id", planId));
+
+        if (!plan.getClient().getEmail().equals(clientEmail)) {
+            throw new BusinessRuleException("You do not have access to this plan.");
+        }
+        return workoutPlanMapper.toDto(plan);
+    }
+
+    // =================================================================================
+    // METODY POMOCNICZE (PRIVATE)
+    // =================================================================================
 
     private Client validateTrainerAccess(String trainerEmail, Long clientId) {
         Trainer trainer = trainerRepository.findByEmail(trainerEmail)
@@ -107,9 +138,14 @@ public class WorkoutPlanService {
                 .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
 
         if (client.getTrainer() == null || !client.getTrainer().equals(trainer)) {
-            throw new BusinessRuleException("Client is not assigned to you.");
+            throw new BusinessRuleException("You do not have access to this client's data.");
         }
         return client;
+    }
+
+    private Client getClientByEmail(String email) {
+        return clientRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", email));
     }
 
     private boolean isWorkoutPlanReady(WorkoutPlanCreationDTO creationDto) {

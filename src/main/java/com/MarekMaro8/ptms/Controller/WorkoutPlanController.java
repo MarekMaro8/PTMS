@@ -21,36 +21,50 @@ public class WorkoutPlanController {
         this.workoutPlanService = workoutPlanService;
     }
 
-    // --- DLA KLIENTA ---
+    // =================================================================================
+    // DLA KLIENTA
+    // =================================================================================
 
-    // Klient pobiera SWÓJ aktywny plan
+    // 1. Klient pobiera SWÓJ aktywny plan (Dashboard)
     @PreAuthorize("hasRole('CLIENT')")
     @GetMapping("/me/active")
     public ResponseEntity<WorkoutPlanDTO> getMyActivePlan(Principal principal) {
         return ResponseEntity.ok(workoutPlanService.getMyActivePlan(principal.getName()));
     }
 
-    // Klient pobiera historię SWOICH planów
+    // 2. Klient pobiera historię SWOICH planów (Lista)
     @PreAuthorize("hasRole('CLIENT')")
     @GetMapping("/me")
     public ResponseEntity<List<WorkoutPlanDTO>> getMyPlans(Principal principal) {
         return ResponseEntity.ok(workoutPlanService.getMyAllPlans(principal.getName()));
     }
 
-    // --- DLA TRENERA ---
+    // 3.  Klient pobiera szczegóły konkretnego planu (np. historycznego)
+    @PreAuthorize("hasRole('CLIENT')")
+    @GetMapping("/me/{planId}")
+    public ResponseEntity<WorkoutPlanDTO> getMyPlanDetails(
+            @PathVariable Long planId,
+            Principal principal) {
 
-    // Trener tworzy plan dla klienta
+        return ResponseEntity.ok(workoutPlanService.getMyPlanById(principal.getName(), planId));
+    }
+
+    // =================================================================================
+    // DLA TRENERA
+    // =================================================================================
+
+    // 1. Trener tworzy plan dla klienta
     @PreAuthorize("hasRole('TRAINER')")
     @PostMapping("/client/{clientId}/new")
     public ResponseEntity<WorkoutPlanDTO> createNewWorkoutPlan(
             @PathVariable Long clientId,
-            @Valid  @RequestBody WorkoutPlanCreationDTO newWorkoutPlan,
+            @Valid @RequestBody WorkoutPlanCreationDTO newWorkoutPlan,
             Principal principal) {
 
         return ResponseEntity.ok(workoutPlanService.createNewWorkoutPlan(principal.getName(), clientId, newWorkoutPlan));
     }
 
-    // Trener aktywuje plan
+    // 2. Trener aktywuje plan
     @PreAuthorize("hasRole('TRAINER')")
     @PostMapping("/{planId}/activate")
     public ResponseEntity<WorkoutPlanDTO> activateWorkoutPlan(
@@ -60,7 +74,7 @@ public class WorkoutPlanController {
         return ResponseEntity.ok(workoutPlanService.activatePlan(principal.getName(), planId));
     }
 
-    // Trener widzi plany klienta
+    // 3. Trener widzi WSZYSTKIE plany klienta (Historia)
     @PreAuthorize("hasRole('TRAINER')")
     @GetMapping("/client/{clientId}/all")
     public ResponseEntity<List<WorkoutPlanDTO>> getAllPlansOfClient(
@@ -68,5 +82,15 @@ public class WorkoutPlanController {
             Principal principal) {
 
         return ResponseEntity.ok(workoutPlanService.getAllPlansForClient(principal.getName(), clientId));
+    }
+
+    // 4. [NOWE] Trener widzi AKTYWNY plan klienta
+    @PreAuthorize("hasRole('TRAINER')")
+    @GetMapping("/client/{clientId}/active")
+    public ResponseEntity<WorkoutPlanDTO> getClientActivePlan(
+            @PathVariable Long clientId,
+            Principal principal) {
+
+        return ResponseEntity.ok(workoutPlanService.getClientActivePlan(principal.getName(), clientId));
     }
 }

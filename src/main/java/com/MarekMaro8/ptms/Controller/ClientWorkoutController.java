@@ -7,15 +7,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 import java.util.Map;
 
 import java.security.Principal;
 
 @RestController
-// USUWAMY {clientId} z prefiksu!
 @RequestMapping("/api/workouts")
 public class ClientWorkoutController {
-
     private final SessionService sessionService;
 
     public ClientWorkoutController(SessionService sessionService) {
@@ -27,12 +27,34 @@ public class ClientWorkoutController {
     @PostMapping("/start/{workoutDayId}")
     public ResponseEntity<SessionDTO> startWorkout(
             @PathVariable Long workoutDayId,
-            @Valid  @RequestBody SessionStartDTO startDto,
+            @Valid @RequestBody SessionStartDTO startDto,
             Principal principal) {
 
         SessionDTO newSession = sessionService.startSession(principal.getName(), workoutDayId, startDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(newSession);
     }
+
+    // Get Active Session
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
+    @GetMapping("/active")
+    public ResponseEntity<SessionDTO> getActiveSession(Principal principal) {
+        SessionDTO activeSession = sessionService.getActiveSession(principal.getName());
+
+        if (activeSession == null) {
+            return ResponseEntity.noContent().build(); // Zwraca kod 204 (No Content) - czysto i profesjonalnie
+        }
+
+        return ResponseEntity.ok(activeSession); // Zwraca kod 200 i obiekt sesji
+    }
+    // Get History
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
+    @GetMapping("/history")
+    public ResponseEntity<List<SessionDTO>> getWorkoutHistory(Principal principal) {
+        List<SessionDTO> history = sessionService.getSessionHistory(principal.getName());
+
+        return ResponseEntity.ok(history);
+    }
+
 
     // Finish
     @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")

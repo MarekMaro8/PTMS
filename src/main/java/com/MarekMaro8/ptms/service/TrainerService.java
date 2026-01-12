@@ -66,7 +66,6 @@ public class TrainerService {
         Client client = clientRepository.findById(clientId)
                 .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
 
-        // SECURITY CHECK:
         if (client.getTrainer() == null || !client.getTrainer().getId().equals(trainer.getId())) {
             throw new BusinessRuleException("Client is not assigned to you.");
         }

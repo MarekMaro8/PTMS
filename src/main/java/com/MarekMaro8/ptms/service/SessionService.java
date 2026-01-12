@@ -1,6 +1,9 @@
 package com.MarekMaro8.ptms.service;
 
-import com.MarekMaro8.ptms.dto.session.*;
+import com.MarekMaro8.ptms.dto.session.SessionDTO;
+import com.MarekMaro8.ptms.dto.session.SessionMapper;
+import com.MarekMaro8.ptms.dto.session.SessionSetDTO;
+import com.MarekMaro8.ptms.dto.session.SessionStartDTO;
 import com.MarekMaro8.ptms.exception.BusinessRuleException;
 import com.MarekMaro8.ptms.exception.ResourceAlreadyExistsException;
 import com.MarekMaro8.ptms.exception.ResourceNotFoundException;
@@ -10,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class SessionService {
@@ -40,30 +45,34 @@ public class SessionService {
 
     // START SESJI
     @Transactional
-    public SessionDTO startSession(String clientEmail, Long workoutDayId, SessionStartDTO requestDto) {
-        Client client = clientRepository.findByEmail(clientEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", clientEmail));
+    public SessionDTO startSession(String userEmail, Long workoutDayId, SessionStartDTO requestDto) {
+
         WorkoutDay workoutDay = workoutDayRepository.findById(workoutDayId)
                 .orElseThrow(() -> new ResourceNotFoundException("Workoutday", "id", workoutDayId));
 
         if (workoutDay.getWorkoutPlan() == null || !workoutDay.getWorkoutPlan().getIsActive()) {
             throw new BusinessRuleException("Cannot start session for inactive or non-existing workout plan.");
         }
-        // Opcjonalnie: sprawdź czy plan należy do tego klienta
-        if (!workoutDay.getWorkoutPlan().getClient().equals(client)) {
-            throw new BusinessRuleException("Workout day does not belong to this client.");
+
+        Client targetClient = workoutDay.getWorkoutPlan().getClient();
+
+        boolean isClientOwner = targetClient.getEmail().equals(userEmail);
+        boolean isTrainerOwner = targetClient.getTrainer() != null && targetClient.getTrainer().getEmail().equals(userEmail);
+
+        if (!isClientOwner && !isTrainerOwner) {
+            throw new BusinessRuleException("You are not authorized to start this session.");
         }
 
         Session newSession = new Session();
-        newSession.setClient(client);
+        newSession.setClient(targetClient);
         newSession.setWorkoutDay(workoutDay);
         newSession.setStartTime(LocalDateTime.now());
+
         newSession.setNotes(requestDto.notes());
         newSession.setEnergyLevel(requestDto.energyLevel());
         newSession.setSleepQuality(requestDto.sleepQuality());
         newSession.setStressLevel(requestDto.stressLevel());
         newSession.setBodyWeight(requestDto.bodyWeight());
-
 
         if (workoutDay.getPlanExercises() != null) {
             int order = 1;
@@ -72,7 +81,12 @@ public class SessionService {
                 sessionEx.setSession(newSession);
                 sessionEx.setExercise(planEx.getExercise());
                 sessionEx.setOrderIndex(order++);
-                sessionEx.setNotes("Cel: " + planEx.getSets() + "x" + planEx.getRepsRange());
+
+                if (planEx.getSets() != null && planEx.getRepsRange() != null) {
+                    sessionEx.setNotes("Cel: " + planEx.getSets() + "x" + planEx.getRepsRange());
+                } else {
+                    sessionEx.setNotes("Brak określonego celu.");
+                }
                 newSession.addSessionExercise(sessionEx);
             }
         }
@@ -80,12 +94,66 @@ public class SessionService {
         return sessionMapper.toDto(sessionRepository.save(newSession));
     }
 
+    // POBRANIE AKTYWNEJ SESJI
+    @Transactional(readOnly = true)
+    public SessionDTO getActiveSession(String userEmail) {
+        Client client = clientRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", userEmail));
+
+        return sessionRepository.findByClientIdAndCompletedFalse(client.getId())
+                .map(sessionMapper::toDto)
+                .orElse(null);
+    }
+
+    // HISTORIA SESJI
+    @Transactional(readOnly = true)
+    public List<SessionDTO> getSessionHistory(String userEmail) {
+        // 1. Znajdujemy klienta po mailu (tak jak lubisz)
+        Client client = clientRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", userEmail));
+
+        // 2. Pobieramy listę z repozytorium (używając metody, którą już masz)
+        List<Session> sessions = sessionRepository.findAllByClientIdOrderByStartTimeDesc(client.getId());
+
+        // 3. Mapujemy (zamieniamy) listę encji na listę DTO
+        // Używamy strumieni (stream), co jest bardzo eleganckim podejściem w Javie
+        return sessions.stream()
+                .map(sessionMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    // AKTYWNA SESJA KLIENTA DLA TRENERA - PO ID KLIENTA
+    @Transactional(readOnly = true)
+    public SessionDTO getClientActiveSessionForTrainer(String trainerEmail, Long clientId) {
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
+
+        if (client.getTrainer() == null || !client.getTrainer().getEmail().equals(trainerEmail)) {
+            throw new BusinessRuleException("Nie masz dostępu do danych tego klienta.");
+        }
+        return sessionRepository.findByClientIdAndCompletedFalse(clientId)
+                .map(sessionMapper::toDto)
+                .orElse(null);
+    }
+
+
+    // HISTORIA SESJI DLA TRENERA - PO ID KLIENTA
+    @Transactional(readOnly = true)
+    public List<SessionDTO> getClientHistoryForTrainer(Long clientId) {
+        return sessionRepository.findAllByClientIdOrderByStartTimeDesc(clientId)
+                .stream()
+                .map(sessionMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+
     // FINALIZACJA
     @Transactional
     public SessionDTO completeSession(Long sessionId, String clientEmail) {
         Session session = validateSessionOwnership(sessionId, clientEmail);
 
-        if (session.isCompleted()) throw new ResourceAlreadyExistsException("Session with id '" + sessionId + "' is already completed.");
+        if (session.isCompleted())
+            throw new ResourceAlreadyExistsException("Session with id '" + sessionId + "' is already completed.");
 
         session.setEndTime(LocalDateTime.now());
         session.setCompleted(true);
@@ -113,9 +181,9 @@ public class SessionService {
         }
 
         SessionSet newSet = new SessionSet();
-        newSet.setReps(setDto.reps());   // Bierzemy z SessionSetDTO
-        newSet.setWeight(setDto.weight()); // Bierzemy z SessionSetDTO
-        newSet.setRpe(setDto.rpe());       // Bierzemy z SessionSetDTO
+        newSet.setReps(setDto.reps());
+        newSet.setWeight(setDto.weight());
+        newSet.setRpe(setDto.rpe());
 
         sessionExercise.addSet(newSet);
         sessionSetRepository.save(newSet);
@@ -163,13 +231,12 @@ public class SessionService {
     // --- SECURITY Helper ---
     private Session validateSessionOwnership(Long sessionId, String userEmail) {
         Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() ->new ResourceNotFoundException("Session", "id", sessionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Session", "id", sessionId));
 
         String clientEmail = session.getClient().getEmail();
         String trainerEmail = session.getClient().getTrainer() != null ?
                 session.getClient().getTrainer().getEmail() : null;
 
-        // Jeśli zalogowany email to email klienta LUB email jego trenera -> dajemy dostęp
         if (userEmail.equals(clientEmail) || userEmail.equals(trainerEmail)) {
             return session;
         }

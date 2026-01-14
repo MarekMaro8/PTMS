@@ -9,5 +9,5 @@ import java.util.Optional;
 public interface SessionRepository extends JpaRepository<Session, Long> {
     List<Session> findAllByClientIdOrderByStartTimeDesc(Long clientId);
     Optional<Session> findByClientIdAndCompletedFalse(Long clientId);
-
+    boolean existsByWorkoutDay_WorkoutPlan_Id(Long planId);
 }

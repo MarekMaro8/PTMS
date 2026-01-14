@@ -9,8 +9,10 @@ import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.model.Trainer;
 import com.MarekMaro8.ptms.model.WorkoutPlan;
 import com.MarekMaro8.ptms.repository.ClientRepository;
+import com.MarekMaro8.ptms.repository.SessionRepository;
 import com.MarekMaro8.ptms.repository.TrainerRepository;
 import com.MarekMaro8.ptms.repository.WorkoutPlanRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,15 +26,17 @@ public class WorkoutPlanService {
     private final ClientRepository clientRepository;
     private final TrainerRepository trainerRepository;
     private final WorkoutPlanMapper workoutPlanMapper;
+    private final SessionRepository sessionRepository;
 
     public WorkoutPlanService(WorkoutPlanRepository workoutPlanRepository,
                               ClientRepository clientRepository,
                               TrainerRepository trainerRepository,
-                              WorkoutPlanMapper workoutPlanMapper) {
+                              WorkoutPlanMapper workoutPlanMapper, SessionRepository sessionRepository) {
         this.workoutPlanRepository = workoutPlanRepository;
         this.clientRepository = clientRepository;
         this.trainerRepository = trainerRepository;
         this.workoutPlanMapper = workoutPlanMapper;
+        this.sessionRepository = sessionRepository;
     }
 
     // =================================================================================
@@ -74,7 +78,7 @@ public class WorkoutPlanService {
     public List<WorkoutPlanDTO> getAllPlansForClient(String trainerEmail, Long clientId) {
         validateTrainerAccess(trainerEmail, clientId);
 
-        return workoutPlanRepository.findAllByClientId(clientId).stream()
+        return workoutPlanRepository.findAllByClientIdWithDays(clientId).stream()
                 .map(workoutPlanMapper::toDto)
                 .collect(Collectors.toList());
     }
@@ -88,6 +92,23 @@ public class WorkoutPlanService {
                 .orElseThrow(() -> new ResourceNotFoundException("Active plan not found ", "client id", clientId));
 
         return workoutPlanMapper.toDto(activePlan);
+    }
+
+    // 5. Usuwanie planu
+    @Transactional
+    public void deletePlan(String trainerEmail, Long planId) {
+        WorkoutPlan plan = workoutPlanRepository.findById(planId)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkoutPlan", "id", planId));
+
+        validateTrainerAccess(trainerEmail, plan.getClient().getId());
+
+        // 3. ZABEZPIECZENIE: Sprawdzamy sesje jednym szybkim zapytaniem
+        if (sessionRepository.existsByWorkoutDay_WorkoutPlan_Id(planId)) {
+            throw new BusinessRuleException("You cannot delete a workout plan that has associated sessions.");
+        }
+
+        // 4. Jeśli nie ma sesji, usuwamy plan (Cascade usunie też Dni i Ćwiczenia wewnątrz)
+        workoutPlanRepository.delete(plan);
     }
 
     // =================================================================================
@@ -110,7 +131,7 @@ public class WorkoutPlanService {
     public List<WorkoutPlanDTO> getMyAllPlans(String clientEmail) {
         Client client = getClientByEmail(clientEmail);
 
-        return workoutPlanRepository.findAllByClientId(client.getId()).stream()
+        return workoutPlanRepository.findAllByClientIdWithDays(client.getId()).stream()
                 .map(workoutPlanMapper::toDto)
                 .collect(Collectors.toList());
     }
@@ -122,10 +143,11 @@ public class WorkoutPlanService {
                 .orElseThrow(() -> new ResourceNotFoundException("Plan", "id", planId));
 
         if (!plan.getClient().getEmail().equals(clientEmail)) {
-            throw new BusinessRuleException("You do not have access to this plan.");
+            throw new AccessDeniedException("You do not have access to this plan.");
         }
         return workoutPlanMapper.toDto(plan);
     }
+
 
     // =================================================================================
     // METODY POMOCNICZE (PRIVATE)
@@ -138,7 +160,7 @@ public class WorkoutPlanService {
                 .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
 
         if (client.getTrainer() == null || !client.getTrainer().equals(trainer)) {
-            throw new BusinessRuleException("You do not have access to this client's data.");
+            throw new AccessDeniedException("You do not have access to this client's data.");
         }
         return client;
     }

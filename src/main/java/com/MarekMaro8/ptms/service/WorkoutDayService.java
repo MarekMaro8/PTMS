@@ -16,6 +16,7 @@ import com.MarekMaro8.ptms.repository.PlanExerciseRepository;
 import com.MarekMaro8.ptms.repository.TrainerRepository;
 import com.MarekMaro8.ptms.repository.WorkoutDayRepository;
 import com.MarekMaro8.ptms.repository.WorkoutPlanRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -113,7 +114,7 @@ public class WorkoutDayService {
 
         // Security: Czy ten dzień należy do mojego planu?
         if (!day.getWorkoutPlan().getClient().getEmail().equals(clientEmail)) {
-            throw new BusinessRuleException("Nie masz dostępu do tego dnia treningowego.");
+            throw new AccessDeniedException("You do not have access to this workout day.");
         }
 
         return workoutPlanMapper.toWorkoutDayDto(day);
@@ -127,7 +128,7 @@ public class WorkoutDayService {
 
         // Security: Czy ten plan jest mój?
         if (!plan.getClient().getEmail().equals(clientEmail)) {
-            throw new BusinessRuleException("To nie jest Twój plan treningowy.");
+            throw new AccessDeniedException("You do not have access to this plan.");
         }
 
         return workoutDayRepository.findAllByWorkoutPlanId(planId).stream()
@@ -149,7 +150,7 @@ public class WorkoutDayService {
         Client planOwner = plan.getClient();
 
         if (planOwner == null || planOwner.getTrainer() == null || !planOwner.getTrainer().equals(trainer)) {
-            throw new BusinessRuleException("Nie masz uprawnień do edycji tego planu (to nie Twój klient).");
+            throw new AccessDeniedException("You do not have access to this client's plan.");
         }
     }
 }

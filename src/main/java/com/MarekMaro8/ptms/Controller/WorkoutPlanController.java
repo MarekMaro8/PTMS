@@ -84,7 +84,7 @@ public class WorkoutPlanController {
         return ResponseEntity.ok(workoutPlanService.getAllPlansForClient(principal.getName(), clientId));
     }
 
-    // 4. [NOWE] Trener widzi AKTYWNY plan klienta
+    // 4. Trener widzi AKTYWNY plan klienta
     @PreAuthorize("hasRole('TRAINER')")
     @GetMapping("/client/{clientId}/active")
     public ResponseEntity<WorkoutPlanDTO> getClientActivePlan(
@@ -92,5 +92,14 @@ public class WorkoutPlanController {
             Principal principal) {
 
         return ResponseEntity.ok(workoutPlanService.getClientActivePlan(principal.getName(), clientId));
+    }
+
+    @PreAuthorize("hasRole('TRAINER')")
+    @DeleteMapping("/{planId}")
+    public ResponseEntity<Void> deleteWorkoutPlan(
+            @PathVariable Long planId,
+            Principal principal) {
+        workoutPlanService.deletePlan(principal.getName(), planId);
+        return ResponseEntity.noContent().build();
     }
 }

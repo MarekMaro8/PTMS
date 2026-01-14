@@ -13,6 +13,7 @@ import com.MarekMaro8.ptms.model.Session;
 import com.MarekMaro8.ptms.model.Trainer;
 import com.MarekMaro8.ptms.repository.ClientRepository;
 import com.MarekMaro8.ptms.repository.TrainerRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,7 +100,7 @@ public class ClientService {
                 .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
 
         if (client.getTrainer() == null || !client.getTrainer().getId().equals(trainer.getId())) {
-            throw new BusinessRuleException("Trainer is not assigned to this client.");
+            throw new AccessDeniedException("Trainer is not assigned to this client.");
         }
 
         client.setNotes(newNotes);
@@ -114,7 +115,7 @@ public class ClientService {
                 .orElseThrow(() -> new ResourceNotFoundException("Client", "email", clientEmail));
 
         if (client.getTrainer() == null || !client.getTrainer().getId().equals(trainer.getId())) {
-            throw new BusinessRuleException("Trainer is not assigned to this client.");
+            throw new AccessDeniedException("Trainer is not assigned to this client.");
         }
 
         client.setHealthStatus(status);

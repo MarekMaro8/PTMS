@@ -12,6 +12,7 @@ import com.MarekMaro8.ptms.model.Client;
 import com.MarekMaro8.ptms.model.Trainer;
 import com.MarekMaro8.ptms.repository.ClientRepository;
 import com.MarekMaro8.ptms.repository.TrainerRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +68,7 @@ public class TrainerService {
                 .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
 
         if (client.getTrainer() == null || !client.getTrainer().getId().equals(trainer.getId())) {
-            throw new BusinessRuleException("Client is not assigned to you.");
+            throw new AccessDeniedException("Client is not assigned to you.");
         }
 
         return clientMapper.toDto(client);
@@ -83,7 +84,7 @@ public class TrainerService {
                 .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
 
         if (client.getTrainer() != null && !client.getTrainer().equals(trainer)) {
-            throw new BusinessRuleException("Client is already assigned to another trainer.");
+            throw new AccessDeniedException("Client is already assigned to another trainer.");
         }
 
         trainer.addClient(client); // Relacja + FK
@@ -106,7 +107,7 @@ public class TrainerService {
             client.setTrainer(null);
             clientRepository.save(client);
         } else {
-            throw new BusinessRuleException("Cannot unassign a client that isn't yours.");
+            throw new AccessDeniedException("Cannot unassign a client that isn't yours.");
         }
     }
 

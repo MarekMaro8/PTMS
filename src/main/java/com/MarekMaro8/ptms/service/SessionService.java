@@ -9,6 +9,7 @@ import com.MarekMaro8.ptms.exception.ResourceAlreadyExistsException;
 import com.MarekMaro8.ptms.exception.ResourceNotFoundException;
 import com.MarekMaro8.ptms.model.*;
 import com.MarekMaro8.ptms.repository.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,7 +61,7 @@ public class SessionService {
         boolean isTrainerOwner = targetClient.getTrainer() != null && targetClient.getTrainer().getEmail().equals(userEmail);
 
         if (!isClientOwner && !isTrainerOwner) {
-            throw new BusinessRuleException("You are not authorized to start this session.");
+            throw new AccessDeniedException("You are not authorized to start this session.");
         }
 
         Session newSession = new Session();
@@ -129,7 +130,7 @@ public class SessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
 
         if (client.getTrainer() == null || !client.getTrainer().getEmail().equals(trainerEmail)) {
-            throw new BusinessRuleException("Nie masz dostępu do danych tego klienta.");
+            throw new AccessDeniedException("You do not have access to this client's data.");
         }
         return sessionRepository.findByClientIdAndCompletedFalse(clientId)
                 .map(sessionMapper::toDto)
@@ -177,7 +178,7 @@ public class SessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Session exercise", "id", sessionExerciseId));
 
         if (!sessionExercise.getSession().getId().equals(sessionId)) {
-            throw new BusinessRuleException("Exercise does not belong to this session");
+            throw new AccessDeniedException("Exercise does not belong to this session");
         }
 
         SessionSet newSet = new SessionSet();
@@ -223,7 +224,7 @@ public class SessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Session exercise", "id", sessionExerciseId));
 
         if (!exercise.getSession().getId().equals(sessionId)) {
-            throw new BusinessRuleException("Exercise does not belong to this session");
+            throw new AccessDeniedException("Exercise does not belong to this session");
         }
         sessionExerciseRepository.delete(exercise);
     }
@@ -240,6 +241,6 @@ public class SessionService {
         if (userEmail.equals(clientEmail) || userEmail.equals(trainerEmail)) {
             return session;
         }
-        throw new BusinessRuleException("Access denied to this session.");
+        throw new AccessDeniedException("Access denied to this session.");
     }
 }

@@ -134,10 +134,15 @@ public class TrainerController {
         return ResponseEntity.ok(activeSession); // 200 OK + dane sesji
     }
 
+
+
     // Opcjonalnie: Publiczny endpoint do pobrania profilu trenera (bez logowania lub dla klienta)
     @PreAuthorize("hasRole('CLIENT')")
     @GetMapping("/{trainerId}")
     public ResponseEntity<Optional<TrainerDTO>> getPublicTrainerProfile(@PathVariable Long trainerId) {
         return ResponseEntity.ok(trainerService.getTrainerById(trainerId));
     }
+
+
+
 }

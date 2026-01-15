@@ -134,6 +134,11 @@ public class ClientService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public long getClientCount() {
+        return clientRepository.count();
+    }
+
     public List<ClientDTO> findAllClientsWithoutTrainer() {
         return clientRepository.findAllByTrainerIsNull().stream()
                 .map(clientMapper::toDto)

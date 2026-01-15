@@ -41,17 +41,16 @@ public class ClientController {
         return ResponseEntity.ok(trainer);
     }
 
-    // Opcjonalnie: Lista wszystkich klientów (dla admina/wyszukiwarki)
-    //Bez preauthorize dlatego ze jest to na razie komenda testsowa - bedzie usnieta w przyszlosci
-    @GetMapping
-    public ResponseEntity<List<ClientDTO>> getAllClients() {
-        return ResponseEntity.ok(clientService.findAllClients());
-    }
-
     // Opcjonalnie: Lista klientów bez trenera (dla trenerów szukających podopiecznych)
     @PreAuthorize("hasRole('TRAINER')")
     @GetMapping("/without-trainer")
     public ResponseEntity<List<ClientDTO>> getClientsWithoutTrainer() {
         return ResponseEntity.ok(clientService.findAllClientsWithoutTrainer());
+    }
+
+    @GetMapping("/clients/count")
+    public ResponseEntity<Long> getClientsCount(Principal principal) {
+        long count = clientService.getClientCount();
+        return ResponseEntity.ok(count);
     }
 }

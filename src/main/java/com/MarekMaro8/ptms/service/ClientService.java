@@ -128,11 +128,6 @@ public class ClientService {
     // =========================================================
 
 
-    public List<ClientDTO> findAllClients() {
-        return clientRepository.findAll().stream()
-                .map(clientMapper::toDto)
-                .collect(Collectors.toList());
-    }
 
     @Transactional(readOnly = true)
     public long getClientCount() {

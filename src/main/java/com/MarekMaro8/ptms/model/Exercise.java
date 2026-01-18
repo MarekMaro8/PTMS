@@ -17,12 +17,15 @@ public class Exercise {
 
     private String muscleGroup; // np. "Legs", "Chest" (Opcjonalne)
 
+    private String description; // Opcjonalne pole na opis ćwiczenia
+
     // Konstruktory
     public Exercise() {}
 
-    public Exercise(String name, String muscleGroup) {
+    public Exercise(String name, String muscleGroup, String description) {
         this.name = name;
         this.muscleGroup = muscleGroup;
+        this.description = description;
     }
 
     // Gettery i Settery
@@ -33,4 +36,12 @@ public class Exercise {
 
     public String getMuscleGroup() { return muscleGroup; }
     public void setMuscleGroup(String muscleGroup) { this.muscleGroup = muscleGroup; }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 }

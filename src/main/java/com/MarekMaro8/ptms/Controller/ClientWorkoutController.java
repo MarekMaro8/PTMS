@@ -9,8 +9,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-
 import java.security.Principal;
 
 @RestController
@@ -22,7 +20,8 @@ public class ClientWorkoutController {
         this.sessionService = sessionService;
     }
 
-    // Start
+    // Start Sesji
+    // Tutaj logika jest po ID dnia treningowego, więc zostaje bez zmian.
     @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
     @PostMapping("/start/{workoutDayId}")
     public ResponseEntity<SessionDTO> startWorkout(
@@ -34,29 +33,37 @@ public class ClientWorkoutController {
         return ResponseEntity.status(HttpStatus.CREATED).body(newSession);
     }
 
-    // Get Active Session
+    // Get Active Session (POPRAWIONE)
+    // Dodano opcjonalny parametr clientId.
+    // Klient wchodzi na "/active" -> clientId jest null -> Service bierze go z tokena.
+    // Trener wchodzi na "/active?clientId=5" -> Service sprawdza, czy to klient trenera i zwraca dane.
     @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
     @GetMapping("/active")
-    public ResponseEntity<SessionDTO> getActiveSession(Principal principal) {
-        SessionDTO activeSession = sessionService.getActiveSession(principal.getName());
+    public ResponseEntity<SessionDTO> getActiveSession(
+            @RequestParam(required = false) Long clientId,
+            Principal principal) {
+
+        SessionDTO activeSession = sessionService.getActiveSession(principal.getName(), clientId);
 
         if (activeSession == null) {
-            return ResponseEntity.noContent().build(); // Zwraca kod 204 (No Content) - czysto i profesjonalnie
+            return ResponseEntity.noContent().build(); // 204 No Content
         }
 
-        return ResponseEntity.ok(activeSession); // Zwraca kod 200 i obiekt sesji
+        return ResponseEntity.ok(activeSession);
     }
+
     // Get History
     @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
     @GetMapping("/history")
-    public ResponseEntity<List<SessionDTO>> getWorkoutHistory(Principal principal) {
-        List<SessionDTO> history = sessionService.getSessionHistory(principal.getName());
+    public ResponseEntity<List<SessionDTO>> getWorkoutHistory(
+            @RequestParam(required = false) Long clientId,
+            Principal principal) {
 
+        List<SessionDTO> history = sessionService.getSessionHistory(principal.getName(), clientId);
         return ResponseEntity.ok(history);
     }
 
-
-    // Finish
+    // Finish Workout
     @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
     @PostMapping("/{sessionId}/finish")
     public ResponseEntity<SessionDTO> finishWorkout(
@@ -74,6 +81,7 @@ public class ClientWorkoutController {
             @PathVariable Long sessionId,
             @Valid @RequestBody SessionNotesDTO notesDto,
             Principal principal) {
+
         sessionService.updateSessionNotes(sessionId, principal.getName(), notesDto.notes());
         return ResponseEntity.ok().build();
     }
@@ -84,7 +92,7 @@ public class ClientWorkoutController {
     public ResponseEntity<SessionDTO> addSet(
             @PathVariable Long sessionId,
             @PathVariable Long sessionExerciseId,
-            @Valid  @RequestBody SessionSetDTO setDto,
+            @Valid @RequestBody SessionSetDTO setDto,
             Principal principal) {
 
         SessionDTO updatedSession = sessionService.addSetToExercise(sessionId, sessionExerciseId, setDto, principal.getName());
@@ -103,12 +111,12 @@ public class ClientWorkoutController {
         return ResponseEntity.noContent().build();
     }
 
-    // Add Ad-Hoc
+    // Add Ad-Hoc Exercise
     @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
     @PostMapping("/{sessionId}/exercises/ad-hoc")
     public ResponseEntity<SessionDTO> addAdHocExercise(
             @PathVariable Long sessionId,
-            @Valid  @RequestParam Long exerciseId,
+            @RequestParam Long exerciseId,
             Principal principal) {
 
         SessionDTO updatedSession = sessionService.addAdHocExercise(sessionId, exerciseId, principal.getName());

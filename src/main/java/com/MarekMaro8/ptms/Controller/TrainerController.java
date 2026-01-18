@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -102,7 +103,6 @@ public class TrainerController {
         return ResponseEntity.ok().build();
     }
 
-
     // 7. Zaktualizuj notatki klienta (dla trenera)
     @PreAuthorize("hasRole('TRAINER')")
     @PatchMapping("/{clientId}/notes")
@@ -114,27 +114,13 @@ public class TrainerController {
 
         return ResponseEntity.ok().build();
     }
-    // 8. Pobierz historię sesji konkretnego klienta (dla trenera)
-    @PreAuthorize("hasRole('TRAINER')")
-    @GetMapping("/client/{clientId}/history")
-    public ResponseEntity<List<SessionDTO>> getClientHistory(@PathVariable Long clientId) {
-        return ResponseEntity.ok(sessionService.getClientHistoryForTrainer(clientId));
+
+    // Publiczny endpoint do pobrania listy wszystkich trenerów (dla klienta)
+    @PreAuthorize("hasRole('CLIENT')")
+    @GetMapping("/all")
+    public ResponseEntity<List<TrainerDTO>> getAllTrainers() {
+        return ResponseEntity.ok(trainerService.findAllTrainers());
     }
-
-    // 9. Pobierz aktywną sesję konkretnego klienta (dla trenera)
-    @PreAuthorize("hasRole('TRAINER')")
-    @GetMapping("/clients/{clientId}/active-session")
-    public ResponseEntity<SessionDTO> getClientActiveSession(@PathVariable Long clientId, Principal principal) {
-        SessionDTO activeSession = sessionService.getClientActiveSessionForTrainer(principal.getName(), clientId);
-
-        if (activeSession == null) {
-            return ResponseEntity.noContent().build(); // 204 No Content (Klient teraz nie ćwiczy - to normalne)
-        }
-
-        return ResponseEntity.ok(activeSession); // 200 OK + dane sesji
-    }
-
-
 
     // Opcjonalnie: Publiczny endpoint do pobrania profilu trenera (bez logowania lub dla klienta)
     @PreAuthorize("hasRole('CLIENT')")
@@ -142,7 +128,4 @@ public class TrainerController {
     public ResponseEntity<Optional<TrainerDTO>> getPublicTrainerProfile(@PathVariable Long trainerId) {
         return ResponseEntity.ok(trainerService.getTrainerById(trainerId));
     }
-
-
-
 }

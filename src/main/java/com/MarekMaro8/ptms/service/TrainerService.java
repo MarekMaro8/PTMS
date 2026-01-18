@@ -136,6 +136,12 @@ public class TrainerService {
         return trainerMapper.toDto(trainer);
     }
 
+        public List<TrainerDTO> findAllTrainers() {
+        return trainerRepository.findAll().stream()
+                .map(trainerMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
 
     // Metoda pomocnicza (np. dla widoku publicznego profilu)
     public Optional<TrainerDTO> getTrainerById(Long trainerId) {

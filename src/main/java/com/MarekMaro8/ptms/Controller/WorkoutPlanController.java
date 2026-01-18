@@ -4,6 +4,7 @@ import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanCreationDTO;
 import com.MarekMaro8.ptms.dto.plan.workoutplan.WorkoutPlanDTO;
 import com.MarekMaro8.ptms.service.WorkoutPlanService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -22,84 +23,77 @@ public class WorkoutPlanController {
     }
 
     // =================================================================================
-    // DLA KLIENTA
+    // LISTY I STANY (Tu Trener musi podać clientId, Klient nie musi)
     // =================================================================================
 
-    // 1. Klient pobiera SWÓJ aktywny plan (Dashboard)
-    @PreAuthorize("hasRole('CLIENT')")
-    @GetMapping("/me/active")
-    public ResponseEntity<WorkoutPlanDTO> getMyActivePlan(Principal principal) {
-        return ResponseEntity.ok(workoutPlanService.getMyActivePlan(principal.getName()));
+    // 1. Pobierz Aktywny Plan
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
+    @GetMapping("/active")
+    public ResponseEntity<WorkoutPlanDTO> getActivePlan(
+            @RequestParam(required = false) Long clientId,
+            Principal principal) {
+
+        WorkoutPlanDTO plan = workoutPlanService.getActivePlan(principal.getName(), clientId);
+        if (plan == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(plan);
     }
 
-    // 2. Klient pobiera historię SWOICH planów (Lista)
-    @PreAuthorize("hasRole('CLIENT')")
-    @GetMapping("/me")
-    public ResponseEntity<List<WorkoutPlanDTO>> getMyPlans(Principal principal) {
-        return ResponseEntity.ok(workoutPlanService.getMyAllPlans(principal.getName()));
+    // 2. Pobierz Historię Planów
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
+    @GetMapping
+    public ResponseEntity<List<WorkoutPlanDTO>> getAllPlans(
+            @RequestParam(required = false) Long clientId,
+            Principal principal) {
+
+        return ResponseEntity.ok(workoutPlanService.getAllPlans(principal.getName(), clientId));
     }
 
-    // 3.  Klient pobiera szczegóły konkretnego planu (np. historycznego)
-    @PreAuthorize("hasRole('CLIENT')")
-    @GetMapping("/me/{planId}")
-    public ResponseEntity<WorkoutPlanDTO> getMyPlanDetails(
+    // 3. Utwórz Plan (Tu Trener musi podać clientId, bo plan jeszcze nie istnieje)
+    @PreAuthorize("hasRole('TRAINER')")
+    @PostMapping
+    public ResponseEntity<WorkoutPlanDTO> createPlan(
+            @RequestParam Long clientId,
+            @Valid @RequestBody WorkoutPlanCreationDTO creationDTO,
+            Principal principal) {
+
+        WorkoutPlanDTO created = workoutPlanService.createWorkoutPlan(principal.getName(), clientId, creationDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    // =================================================================================
+    // OPERACJE NA KONKRETNYM PLANIE
+    // =================================================================================
+
+    // 4. Szczegóły Planu
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
+    @GetMapping("/{planId}")
+    public ResponseEntity<WorkoutPlanDTO> getPlanDetails(
             @PathVariable Long planId,
             Principal principal) {
 
-        return ResponseEntity.ok(workoutPlanService.getMyPlanById(principal.getName(), planId));
+        return ResponseEntity.ok(workoutPlanService.getPlanById(planId, principal.getName()));
     }
 
-    // =================================================================================
-    // DLA TRENERA
-    // =================================================================================
-
-    // 1. Trener tworzy plan dla klienta
-    @PreAuthorize("hasRole('TRAINER')")
-    @PostMapping("/client/{clientId}/new")
-    public ResponseEntity<WorkoutPlanDTO> createNewWorkoutPlan(
-            @PathVariable Long clientId,
-            @Valid @RequestBody WorkoutPlanCreationDTO newWorkoutPlan,
-            Principal principal) {
-
-        return ResponseEntity.ok(workoutPlanService.createNewWorkoutPlan(principal.getName(), clientId, newWorkoutPlan));
-    }
-
-    // 2. Trener aktywuje plan
+    // 5. Aktywuj Plan
     @PreAuthorize("hasRole('TRAINER')")
     @PostMapping("/{planId}/activate")
-    public ResponseEntity<WorkoutPlanDTO> activateWorkoutPlan(
+    public ResponseEntity<WorkoutPlanDTO> activatePlan(
             @PathVariable Long planId,
             Principal principal) {
 
-        return ResponseEntity.ok(workoutPlanService.activatePlan(principal.getName(), planId));
+        return ResponseEntity.ok(workoutPlanService.activatePlan(planId, principal.getName()));
     }
 
-    // 3. Trener widzi WSZYSTKIE plany klienta (Historia)
-    @PreAuthorize("hasRole('TRAINER')")
-    @GetMapping("/client/{clientId}/all")
-    public ResponseEntity<List<WorkoutPlanDTO>> getAllPlansOfClient(
-            @PathVariable Long clientId,
-            Principal principal) {
-
-        return ResponseEntity.ok(workoutPlanService.getAllPlansForClient(principal.getName(), clientId));
-    }
-
-    // 4. Trener widzi AKTYWNY plan klienta
-    @PreAuthorize("hasRole('TRAINER')")
-    @GetMapping("/client/{clientId}/active")
-    public ResponseEntity<WorkoutPlanDTO> getClientActivePlan(
-            @PathVariable Long clientId,
-            Principal principal) {
-
-        return ResponseEntity.ok(workoutPlanService.getClientActivePlan(principal.getName(), clientId));
-    }
-
+    // 6. Usuń Plan
     @PreAuthorize("hasRole('TRAINER')")
     @DeleteMapping("/{planId}")
-    public ResponseEntity<Void> deleteWorkoutPlan(
+    public ResponseEntity<Void> deletePlan(
             @PathVariable Long planId,
             Principal principal) {
-        workoutPlanService.deletePlan(principal.getName(), planId);
+
+        workoutPlanService.deletePlan(planId, principal.getName());
         return ResponseEntity.noContent().build();
     }
 }

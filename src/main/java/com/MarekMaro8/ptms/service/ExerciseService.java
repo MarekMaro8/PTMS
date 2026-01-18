@@ -1,3 +1,4 @@
+
 package com.MarekMaro8.ptms.service;
 
 import com.MarekMaro8.ptms.dto.exercise.ExerciseCreationDTO; // Import

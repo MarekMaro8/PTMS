@@ -9,6 +9,7 @@ import com.MarekMaro8.ptms.exception.ResourceAlreadyExistsException;
 import com.MarekMaro8.ptms.exception.ResourceNotFoundException;
 import com.MarekMaro8.ptms.model.*;
 import com.MarekMaro8.ptms.repository.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,10 +44,66 @@ public class SessionService {
         this.sessionMapper = sessionMapper;
     }
 
+    // ==================================================================================
+    // METODY POMOCNICZE - SERCE LOGIKI UPRAWNIEŃ
+    // ==================================================================================
+
+
+    private Session validateSessionAccess(Long sessionId, String requestUserEmail) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Session", "id", sessionId));
+
+        Client sessionOwner = session.getClient();
+
+        // 1. Czy to właściciel sesji (Klient)?
+        boolean isOwner = sessionOwner.getEmail().equals(requestUserEmail);
+
+        // 2. Czy to trener tego klienta?
+        boolean isTrainer = sessionOwner.getTrainer() != null &&
+                sessionOwner.getTrainer().getEmail().equals(requestUserEmail);
+
+        if (!isOwner && !isTrainer) {
+            throw new AccessDeniedException("You are not authorized to access this session.");
+        }
+
+        return session;
+    }
+
+    /**
+     * Tłumaczenie: Ta metoda służy do operacji ODCZYTU (GET), gdzie nie mamy ID sesji,
+     * a chcemy np. "aktywną sesję".
+     * - Jeśli dzwoni Klient ->clientId jest nullem -> szukamy po mailu.
+     * - Jeśli dzwoni Trener -> clientId jest wymagane -> sprawdzamy czy to jego klient.
+     */
+    private Client resolveClient(String userEmail, Long specificClientId) {
+        // SCENARIUSZ A: Trener chce zobaczyć dane klienta (podał ID)
+        if (specificClientId != null) {
+            Client client = clientRepository.findById(specificClientId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Client", "id", specificClientId));
+
+            // Weryfikacja: Czy ten trener opiekuje się tym klientem?
+            boolean isAssignedTrainer = client.getTrainer() != null &&
+                    client.getTrainer().getEmail().equals(userEmail);
+
+            if (!isAssignedTrainer) {
+                throw new AccessDeniedException("You are not authorized to access this client's data.");
+            }
+            return client;
+        }
+
+        // SCENARIUSZ B: Użytkownik chce swoje dane (nie podał ID, więc zakładamy, że to Klient)
+        return clientRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", userEmail));
+    }
+
+
+    // ==================================================================================
+    // LOGIKA BIZNESOWA
+    // ==================================================================================
+
     // START SESJI
     @Transactional
     public SessionDTO startSession(String userEmail, Long workoutDayId, SessionStartDTO requestDto) {
-
         WorkoutDay workoutDay = workoutDayRepository.findById(workoutDayId)
                 .orElseThrow(() -> new ResourceNotFoundException("Workoutday", "id", workoutDayId));
 
@@ -56,11 +113,12 @@ public class SessionService {
 
         Client targetClient = workoutDay.getWorkoutPlan().getClient();
 
+        // Walidacja: Czy ten kto startuje sesję, ma do tego prawo?
         boolean isClientOwner = targetClient.getEmail().equals(userEmail);
         boolean isTrainerOwner = targetClient.getTrainer() != null && targetClient.getTrainer().getEmail().equals(userEmail);
 
         if (!isClientOwner && !isTrainerOwner) {
-            throw new BusinessRuleException("You are not authorized to start this session.");
+            throw new AccessDeniedException("You are not authorized to start this session.");
         }
 
         Session newSession = new Session();
@@ -68,12 +126,14 @@ public class SessionService {
         newSession.setWorkoutDay(workoutDay);
         newSession.setStartTime(LocalDateTime.now());
 
+        // Przepisanie danych z requestu
         newSession.setNotes(requestDto.notes());
         newSession.setEnergyLevel(requestDto.energyLevel());
         newSession.setSleepQuality(requestDto.sleepQuality());
         newSession.setStressLevel(requestDto.stressLevel());
         newSession.setBodyWeight(requestDto.bodyWeight());
 
+        // Kopiowanie ćwiczeń z planu do sesji (Logbook)
         if (workoutDay.getPlanExercises() != null) {
             int order = 1;
             for (PlanExercise planEx : workoutDay.getPlanExercises()) {
@@ -94,63 +154,35 @@ public class SessionService {
         return sessionMapper.toDto(sessionRepository.save(newSession));
     }
 
-    // POBRANIE AKTYWNEJ SESJI
+    // POBRANIE AKTYWNEJ SESJI (ZMIANA: dodano parametr clientId dla trenera)
     @Transactional(readOnly = true)
-    public SessionDTO getActiveSession(String userEmail) {
-        Client client = clientRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", userEmail));
+    public SessionDTO getActiveSession(String userEmail, Long clientId) {
+        // Używamy naszej inteligentnej metody resolveClient
+        Client client = resolveClient(userEmail, clientId);
 
         return sessionRepository.findByClientIdAndCompletedFalse(client.getId())
                 .map(sessionMapper::toDto)
                 .orElse(null);
     }
 
-    // HISTORIA SESJI
+    // HISTORIA SESJI (ZMIANA: dodano parametr clientId dla trenera)
     @Transactional(readOnly = true)
-    public List<SessionDTO> getSessionHistory(String userEmail) {
-        // 1. Znajdujemy klienta po mailu (tak jak lubisz)
-        Client client = clientRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", userEmail));
+    public List<SessionDTO> getSessionHistory(String userEmail, Long clientId) {
+        Client client = resolveClient(userEmail, clientId);
 
-        // 2. Pobieramy listę z repozytorium (używając metody, którą już masz)
-        List<Session> sessions = sessionRepository.findAllByClientIdOrderByStartTimeDesc(client.getId());
-
-        // 3. Mapujemy (zamieniamy) listę encji na listę DTO
-        // Używamy strumieni (stream), co jest bardzo eleganckim podejściem w Javie
-        return sessions.stream()
-                .map(sessionMapper::toDto)
-                .collect(Collectors.toList());
-    }
-
-    // AKTYWNA SESJA KLIENTA DLA TRENERA - PO ID KLIENTA
-    @Transactional(readOnly = true)
-    public SessionDTO getClientActiveSessionForTrainer(String trainerEmail, Long clientId) {
-        Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new ResourceNotFoundException("Client", "id", clientId));
-
-        if (client.getTrainer() == null || !client.getTrainer().getEmail().equals(trainerEmail)) {
-            throw new BusinessRuleException("Nie masz dostępu do danych tego klienta.");
-        }
-        return sessionRepository.findByClientIdAndCompletedFalse(clientId)
-                .map(sessionMapper::toDto)
-                .orElse(null);
-    }
-
-
-    // HISTORIA SESJI DLA TRENERA - PO ID KLIENTA
-    @Transactional(readOnly = true)
-    public List<SessionDTO> getClientHistoryForTrainer(Long clientId) {
-        return sessionRepository.findAllByClientIdOrderByStartTimeDesc(clientId)
+        return sessionRepository.findAllByClientIdOrderByStartTimeDesc(client.getId())
                 .stream()
                 .map(sessionMapper::toDto)
                 .collect(Collectors.toList());
     }
 
 
+
     // FINALIZACJA
     @Transactional
-    public SessionDTO completeSession(Long sessionId, String clientEmail) {
-        Session session = validateSessionOwnership(sessionId, clientEmail);
+    public SessionDTO completeSession(Long sessionId, String userEmail) {
+        // Walidujemy dostęp (niezależnie czy to Klient czy Trener)
+        Session session = validateSessionAccess(sessionId, userEmail);
 
         if (session.isCompleted())
             throw new ResourceAlreadyExistsException("Session with id '" + sessionId + "' is already completed.");
@@ -162,20 +194,22 @@ public class SessionService {
 
     // NOTATKI
     @Transactional
-    public void updateSessionNotes(Long sessionId, String clientEmail, String newNotes) {
-        Session session = validateSessionOwnership(sessionId, clientEmail);
+    public void updateSessionNotes(Long sessionId, String userEmail, String newNotes) {
+        Session session = validateSessionAccess(sessionId, userEmail);
         session.setNotes(newNotes);
         sessionRepository.save(session);
     }
 
     // SERIE
     @Transactional
-    public SessionDTO addSetToExercise(Long sessionId, Long sessionExerciseId, SessionSetDTO setDto, String clientEmail) { // <--- TU ZMIANA
-        validateSessionOwnership(sessionId, clientEmail);
+    public SessionDTO addSetToExercise(Long sessionId, Long sessionExerciseId, SessionSetDTO setDto, String userEmail) {
+        // Najpierw sprawdzamy, czy user ma dostęp do sesji
+        validateSessionAccess(sessionId, userEmail);
 
         SessionExercise sessionExercise = sessionExerciseRepository.findById(sessionExerciseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session exercise", "id", sessionExerciseId));
 
+        // Spójność danych: czy to ćwiczenie na pewno należy do tej sesji?
         if (!sessionExercise.getSession().getId().equals(sessionId)) {
             throw new BusinessRuleException("Exercise does not belong to this session");
         }
@@ -184,6 +218,8 @@ public class SessionService {
         newSet.setReps(setDto.reps());
         newSet.setWeight(setDto.weight());
         newSet.setRpe(setDto.rpe());
+        // setNumber warto by wyliczyć automatycznie (np. max + 1), ale na razie bierzemy z DTO lub null
+        newSet.setSetNumber(setDto.setNumber() != null ? setDto.setNumber() : 0);
 
         sessionExercise.addSet(newSet);
         sessionSetRepository.save(newSet);
@@ -192,17 +228,25 @@ public class SessionService {
     }
 
     @Transactional
-    public void deleteSet(Long sessionId, Long setId, String clientEmail) {
-        validateSessionOwnership(sessionId, clientEmail);
+    public void deleteSet(Long sessionId, Long setId, String userEmail) {
+        validateSessionAccess(sessionId, userEmail);
+
         SessionSet set = sessionSetRepository.findById(setId)
                 .orElseThrow(() -> new ResourceNotFoundException("Set", "id", setId));
+
+        // Dodatkowe sprawdzenie bezpieczeństwa (czy set należy do sesji)
+        if (!set.getSessionExercise().getSession().getId().equals(sessionId)) {
+            throw new BusinessRuleException("Set does not belong to this session.");
+        }
+
         sessionSetRepository.delete(set);
     }
 
-    // AD-HOC EXERCISE
+    // AD-HOC EXERCISE (ZMIANA: używa validateSessionAccess)
     @Transactional
-    public SessionDTO addAdHocExercise(Long sessionId, Long exerciseId, String clientEmail) {
-        Session session = validateSessionOwnership(sessionId, clientEmail);
+    public SessionDTO addAdHocExercise(Long sessionId, Long exerciseId, String userEmail) {
+        Session session = validateSessionAccess(sessionId, userEmail);
+
         Exercise exercise = exerciseRepository.findById(exerciseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exercise", "id", exerciseId));
 
@@ -210,6 +254,11 @@ public class SessionService {
         newEx.setSession(session);
         newEx.setExercise(exercise);
         newEx.setNotes("Dodatkowe ćwiczenie");
+        // Logika order index (na koniec listy)
+        int maxOrder = session.getSessionExercises().stream()
+                .mapToInt(ex -> ex.getOrderIndex() != null ? ex.getOrderIndex() : 0)
+                .max().orElse(0);
+        newEx.setOrderIndex(maxOrder + 1);
 
         session.addSessionExercise(newEx);
         sessionExerciseRepository.save(newEx);
@@ -217,8 +266,9 @@ public class SessionService {
     }
 
     @Transactional
-    public void deleteSessionExercise(Long sessionId, Long sessionExerciseId, String clientEmail) {
-        validateSessionOwnership(sessionId, clientEmail);
+    public void deleteSessionExercise(Long sessionId, Long sessionExerciseId, String userEmail) {
+        validateSessionAccess(sessionId, userEmail);
+
         SessionExercise exercise = sessionExerciseRepository.findById(sessionExerciseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Session exercise", "id", sessionExerciseId));
 
@@ -226,20 +276,5 @@ public class SessionService {
             throw new BusinessRuleException("Exercise does not belong to this session");
         }
         sessionExerciseRepository.delete(exercise);
-    }
-
-    // --- SECURITY Helper ---
-    private Session validateSessionOwnership(Long sessionId, String userEmail) {
-        Session session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session", "id", sessionId));
-
-        String clientEmail = session.getClient().getEmail();
-        String trainerEmail = session.getClient().getTrainer() != null ?
-                session.getClient().getTrainer().getEmail() : null;
-
-        if (userEmail.equals(clientEmail) || userEmail.equals(trainerEmail)) {
-            return session;
-        }
-        throw new BusinessRuleException("Access denied to this session.");
     }
 }

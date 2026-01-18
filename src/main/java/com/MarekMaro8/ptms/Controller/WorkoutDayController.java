@@ -24,10 +24,38 @@ public class WorkoutDayController {
     }
 
     // =================================================================================
-    // DLA TRENERA (Zarządzanie)
+    // ODCZYT (Klient i Trener)
     // =================================================================================
 
-    // 1. Dodaj dzień do planu
+    // 1. Pobierz konkretny dzień (Szczegóły)
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
+    @GetMapping("/{dayId}")
+    public ResponseEntity<WorkoutDayDTO> getWorkoutDay(
+            @PathVariable Long dayId,
+            Principal principal) {
+
+        return ResponseEntity.ok(
+                workoutDayService.getWorkoutDayById(dayId, principal.getName())
+        );
+    }
+
+    // 2. Pobierz dni z konkretnego planu (Lista dni)
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
+    @GetMapping("/plan/{planId}")
+    public ResponseEntity<List<WorkoutDayDTO>> getDaysByPlan(
+            @PathVariable Long planId,
+            Principal principal) {
+
+        return ResponseEntity.ok(
+                workoutDayService.getDaysByPlanId(planId, principal.getName())
+        );
+    }
+
+    // =================================================================================
+    // MODYFIKACJA (Tylko Trener)
+    // =================================================================================
+
+    // 3. Dodaj dzień do planu
     @PreAuthorize("hasRole('TRAINER')")
     @PostMapping("/plan/{planId}")
     public ResponseEntity<WorkoutDayDTO> addDayToPlan(
@@ -36,11 +64,11 @@ public class WorkoutDayController {
             Principal principal) {
 
         return ResponseEntity.ok(
-                workoutDayService.createWorkoutDayWithExercises(principal.getName(), planId, dayDto)
+                workoutDayService.createWorkoutDay(principal.getName(), planId, dayDto)
         );
     }
 
-    // 2. Dodaj ćwiczenie do dnia
+    // 4. Dodaj ćwiczenie do dnia
     @PreAuthorize("hasRole('TRAINER')")
     @PostMapping("/{dayId}/exercises")
     public ResponseEntity<PlanExerciseDTO> addExerciseToDay(
@@ -49,59 +77,7 @@ public class WorkoutDayController {
             Principal principal) {
 
         return ResponseEntity.ok(
-                workoutDayService.addExerciseInstruction(principal.getName(), dayId, exerciseDto)
-        );
-    }
-
-    // 3. Pobierz konkretny dzień klienta (Podgląd)
-    @PreAuthorize("hasRole('TRAINER')")
-    @GetMapping("/client-view/{dayId}")
-    public ResponseEntity<WorkoutDayDTO> getClientDay(
-            @PathVariable Long dayId,
-            Principal principal) {
-
-        return ResponseEntity.ok(
-                workoutDayService.getClientDayById(principal.getName(), dayId)
-        );
-    }
-
-    // 4. Pobierz wszystkie dni z planu (Podgląd planu)
-    @PreAuthorize("hasRole('TRAINER')")
-    @GetMapping("/plan/{planId}/all")
-    public ResponseEntity<List<WorkoutDayDTO>> getClientDaysFromPlan(
-            @PathVariable Long planId,
-            Principal principal) {
-
-        return ResponseEntity.ok(
-                workoutDayService.getClientDaysByPlanId(principal.getName(), planId)
-        );
-    }
-
-    // =================================================================================
-    // DLA KLIENTA (Mój Trening)
-    // =================================================================================
-
-    // 1. Pobierz MÓJ konkretny dzień (Szczegóły przed startem)
-    @PreAuthorize("hasRole('CLIENT')")
-    @GetMapping("/me/{dayId}")
-    public ResponseEntity<WorkoutDayDTO> getMyDay(
-            @PathVariable Long dayId,
-            Principal principal) {
-
-        return ResponseEntity.ok(
-                workoutDayService.getMyDayById(principal.getName(), dayId)
-        );
-    }
-
-    // 2. Pobierz dni z MOJEGO planu (Widok kalendarza/listy)
-    @PreAuthorize("hasRole('CLIENT')")
-    @GetMapping("/me/plan/{planId}")
-    public ResponseEntity<List<WorkoutDayDTO>> getMyDaysFromPlan(
-            @PathVariable Long planId,
-            Principal principal) {
-
-        return ResponseEntity.ok(
-                workoutDayService.getMyDaysByPlanId(principal.getName(), planId)
+                workoutDayService.addExerciseToDay(principal.getName(), dayId, exerciseDto)
         );
     }
 }

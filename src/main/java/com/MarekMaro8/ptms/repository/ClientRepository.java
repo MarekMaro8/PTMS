@@ -11,13 +11,10 @@ import java.util.Optional;
 public interface ClientRepository extends  JpaRepository<Client, Long> { // Long - typ klucza głównego (ID) w encji Client
 
     Optional<Client> findByEmail(String email); // Metoda do wyszukiwania klienta po adresie e-mail
-    //Optional - obiekt który może zawierać wartość lub być pusty (null)
 
     List<Client> findAllByTrainerIsNull(); // Metoda do wyszukiwania klientów bez przypisanego trenera
 
-    List<Client> findAllByTrainerId(Long trainerId);// Metoda do wyszukiwania klientów przypisanych do konkretnego trenera po jego ID>
-
-    Optional<Object> findByTrainer(Trainer trainer);
+    long count();
 
 //tutaj sa te 3 metody bo inne klasy nie wiedza jak obslugiwac SQL, dlatego musza brac z tego interfejsu :)
     // JpaRepository dostarcza podstawowe metody CRUD (Create, Read, Update, Delete)

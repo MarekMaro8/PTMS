@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -93,7 +94,6 @@ public class TrainerController {
             @Valid @RequestBody HealthUpdateDTO healthUpdate,
             Principal principal) {
 
-        // principal.getName() to email zalogowanego trenera
         clientService.updateMyHealthStatus(
                 clientEmail,
                 healthUpdate.status(),
@@ -102,7 +102,6 @@ public class TrainerController {
 
         return ResponseEntity.ok().build();
     }
-
 
     // 7. Zaktualizuj notatki klienta (dla trenera)
     @PreAuthorize("hasRole('TRAINER')")
@@ -137,12 +136,17 @@ public class TrainerController {
 
 
 
+    // Publiczny endpoint do pobrania listy wszystkich trenerów (dla klienta)
+    @PreAuthorize("hasRole('CLIENT')")
+    @GetMapping("/all")
+    public ResponseEntity<List<TrainerDTO>> getAllTrainers() {
+        return ResponseEntity.ok(trainerService.findAllTrainers());
+    }
+
     // Opcjonalnie: Publiczny endpoint do pobrania profilu trenera (bez logowania lub dla klienta)
     @PreAuthorize("hasRole('CLIENT')")
     @GetMapping("/{trainerId}")
     public ResponseEntity<Optional<TrainerDTO>> getPublicTrainerProfile(@PathVariable Long trainerId) {
         return ResponseEntity.ok(trainerService.getTrainerById(trainerId));
     }
-
-
 }

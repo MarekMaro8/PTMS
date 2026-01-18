@@ -13,7 +13,8 @@ public class ExerciseMapper {
         return new ExerciseDTO(
                 exercise.getId(),
                 exercise.getName(),
-                exercise.getMuscleGroup()
+                exercise.getMuscleGroup(),
+                exercise.getDescription()
         );
     }
 
@@ -23,7 +24,8 @@ public class ExerciseMapper {
 
         return new Exercise(
                 dto.name(),
-                dto.muscleGroup()
+                dto.muscleGroup(),
+                dto.description()
         );
     }
 }

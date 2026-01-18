@@ -136,7 +136,7 @@ public class TrainerService {
         return trainerMapper.toDto(trainer);
     }
 
-        public List<TrainerDTO> findAllTrainers() {
+    public List<TrainerDTO> findAllTrainers() {
         return trainerRepository.findAll().stream()
                 .map(trainerMapper::toDto)
                 .collect(Collectors.toList());

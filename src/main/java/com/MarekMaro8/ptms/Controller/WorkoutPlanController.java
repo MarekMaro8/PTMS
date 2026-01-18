@@ -96,4 +96,14 @@ public class WorkoutPlanController {
         workoutPlanService.deletePlan(planId, principal.getName());
         return ResponseEntity.noContent().build();
     }
+
+    // 4. [NOWE] Trener widzi AKTYWNY plan klienta
+    @PreAuthorize("hasRole('TRAINER')")
+    @GetMapping("/client/{clientId}/active")
+    public ResponseEntity<WorkoutPlanDTO> getClientActivePlan(
+            @PathVariable Long clientId,
+            Principal principal) {
+
+        return ResponseEntity.ok(workoutPlanService.getClientActivePlan(principal.getName(), clientId));
+    }
 }

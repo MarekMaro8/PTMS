@@ -60,6 +60,7 @@ public class WorkoutPlanService {
                 .collect(Collectors.toList());
     }
 
+    // 1. Tworzenie planu
     @Transactional
     public WorkoutPlanDTO createWorkoutPlan(String trainerEmail, Long clientId, WorkoutPlanCreationDTO creationDto) {
         // Tu potrzebujemy ID, bo plan jeszcze nie istnieje
@@ -157,6 +158,11 @@ public class WorkoutPlanService {
         if (!isAssignedTrainer) {
             throw new AccessDeniedException("Tylko przypisany trener może modyfikować ten plan.");
         }
+    }
+
+    private Client getClientByEmail(String email) {
+        return clientRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Client", "email", email));
     }
 
     private boolean isWorkoutPlanReady(WorkoutPlanCreationDTO creationDto) {

@@ -1,26 +1,33 @@
-# --- ETAP 1: Budowanie Samego Backendu (Java/Gradle) ---
+# --- ETAP 1: Budowanie Backendu (Gradle) ---
+# Używamy lekkiego obrazu z gotowym Gradle i Javą 17
 FROM gradle:8-jdk17-alpine AS builder
 WORKDIR /app
 
-# Kopiujemy pliki projektu do kontenera
-# Używamy kropki (.), co oznacza "wszystko z obecnego folderu"
-COPY . .
+# KLUCZOWE: Kopiujemy zawartość folderu 'ptms-backend' do głównego katalogu kontenera
+# Dzięki temu plik 'gradlew' znajdzie się w /app/gradlew, a nie w /app/ptms-backend/gradlew
+COPY ptms-backend/ .
 
-# Nadajemy uprawnienia do pliku gradlew (na wszelki wypadek)
+# Nadajemy uprawnienia wykonywania dla wrappera Gradle
 RUN chmod +x gradlew
 
-# Budujemy aplikację, pomijając testy (oszczędność czasu i RAMu na Renderze)
+# Budujemy aplikację:
+# - clean: czyści stare buildy
+# - build: buduje nową wersję
+# - -x test: pomija testy (oszczędność czasu i RAMu na Renderze)
+# - --no-daemon: nie zostawia procesu Gradle w tle (ważne w Dockerze)
 RUN ./gradlew clean build -x test --no-daemon
 
-# --- ETAP 2: Uruchamianie (Lekki obraz Java) ---
+# --- ETAP 2: Uruchamianie (Samo środowisko Java - JRE) ---
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Znajdujemy plik .jar i kopiujemy go pod prostą nazwą app.jar
-# (Dzięki temu nie musisz się martwić o wersję w nazwie pliku)
+# Kopiujemy zbudowany plik .jar z poprzedniego etapu
+# Używamy *.jar, żeby nie martwić się o dokładną wersję w nazwie pliku
 COPY --from=builder /app/build/libs/*.jar app.jar
 
+# Otwieramy port 8080 (standardowy dla Spring Boot)
 EXPOSE 8080
 
-# WAŻNE: Dodane flagi -Xmx ograniczające pamięć dla darmowego planu (512MB)
-ENTRYPOINT ["java", "-Xmx350m", "-Xss512k", "-Dserver.port=8080", "-jar", "app.jar"]
+# Uruchamiamy aplikację z limitem pamięci
+# -Xmx350m: Ogranicza zużycie RAMu do 350MB (darmowy Render ma 512MB, zostawiamy zapas dla systemu)
+ENTRYPOINT ["java", "-Xmx350m", "-Dserver.port=8080", "-jar", "app.jar"]

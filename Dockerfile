@@ -1,21 +1,31 @@
-# --- ETAP 1: Budowanie ---
+# --- ETAP 1: Budowanie z Cache'owaniem (Spring Boot) ---
 FROM gradle:8.1.0-jdk17-alpine AS builder
 WORKDIR /app
 
-# Kopiujemy wszystko (build.gradle, src itp.)
-COPY . .
+# ZMIANA: Usunęliśmy przedrostek "ptms/", bo jesteśmy już w środku tego folderu.
+# Kopiujemy pliki konfiguracyjne z bieżącego katalogu (.) do katalogu roboczego kontenera (./)
+COPY build.gradle settings.gradle ./
+COPY gradlew ./
+COPY gradle ./gradle
 
-# ZMIANA: Usuwamy linię "RUN chmod...", która powodowała błąd.
-# Zamiast tego używamy komendy 'gradle' wbudowanej w ten obraz.
-# To zadziała nawet jeśli pliku 'gradlew' fizycznie nie ma w kontenerze.
-RUN gradle clean build -x test --no-daemon
+# Nadajemy uprawnienia (bez zmian)
+RUN chmod +x gradlew
 
-# --- ETAP 2: Uruchamianie ---
+# Pobieranie zależności (bez zmian - to nadal działa dzięki cache)
+RUN ./gradlew dependencies --no-daemon
+
+# ZMIANA: Kopiujemy folder src z bieżącego katalogu
+COPY src ./src
+
+# Budowanie aplikacji
+RUN ./gradlew clean build -x test --no-daemon
+
+# --- ETAP 2: Uruchamianie (Runtime) ---
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Kopiujemy wynik (plik .jar)
-COPY --from=builder /app/build/libs/*.jar app.jar
+# Kopiowanie pliku wynikowego (tutaj ścieżka wewnątrz kontenera buildera się nie zmienia)
+COPY --from=builder /app/build/libs/PTMS-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-Xmx350m", "-Dserver.port=8080", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

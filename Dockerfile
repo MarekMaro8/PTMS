@@ -1,34 +1,26 @@
-# --- ETAP 1: Budowanie Frontendu (React) ---
-FROM node:20-alpine AS frontend-builder
-WORKDIR /frontend
-
-# UWAGA: Kopiujemy z kontekstu (gdzie leży folder ptms-frontend)
-# Nie używamy "../", bo kontekst jest już ustawiony na folder nadrzędny
-COPY ptms-frontend/package*.json ./
-RUN npm install
-
-COPY ptms-frontend/ ./
-RUN npm run build
-
-# --- ETAP 2: Budowanie Backend (Spring Boot) ---
-FROM gradle:8.1.0-jdk17-alpine AS builder
+# --- ETAP 1: Budowanie Samego Backendu (Java/Gradle) ---
+FROM gradle:8-jdk17-alpine AS builder
 WORKDIR /app
 
-# Kopiujemy TYLKO pliki backendu do folderu roboczego kontenera
-COPY ptms-backend/ .
+# Kopiujemy pliki projektu do kontenera
+# Używamy kropki (.), co oznacza "wszystko z obecnego folderu"
+COPY . .
 
-# Kopiujemy zbudowany frontend do zasobów statycznych Springa
-# WAŻNE: Upewnij się, że Twój React buduje do folderu 'build'.
-# Jeśli używasz Vite, zmień '/frontend/build' na '/frontend/dist'
-COPY --from=frontend-builder /frontend/build /app/src/main/resources/static
-
-# Nadajemy uprawnienia (na wypadek gdyby Git ich nie przeniósł)
+# Nadajemy uprawnienia do pliku gradlew (na wszelki wypadek)
 RUN chmod +x gradlew
-RUN ./gradlew clean build -x test
 
-# --- ETAP 3: Uruchamianie (Runtime) ---
+# Budujemy aplikację, pomijając testy (oszczędność czasu i RAMu na Renderze)
+RUN ./gradlew clean build -x test --no-daemon
+
+# --- ETAP 2: Uruchamianie (Lekki obraz Java) ---
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
-COPY --from=builder /app/build/libs/PTMS-0.0.1-SNAPSHOT.jar app.jar
+
+# Znajdujemy plik .jar i kopiujemy go pod prostą nazwą app.jar
+# (Dzięki temu nie musisz się martwić o wersję w nazwie pliku)
+COPY --from=builder /app/build/libs/*.jar app.jar
+
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# WAŻNE: Dodane flagi -Xmx ograniczające pamięć dla darmowego planu (512MB)
+ENTRYPOINT ["java", "-Xmx350m", "-Xss512k", "-Dserver.port=8080", "-jar", "app.jar"]

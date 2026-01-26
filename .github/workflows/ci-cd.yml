@@ -15,6 +15,7 @@ jobs:
         uses: actions/checkout@v4
         # USUNĘLIŚMY 'path: ptms-backend' - teraz pliki są na "wierzchu"
 
+
       # 2. Pobieramy Frontend (zostawiamy w osobnym folderze, żeby nie śmiecił)
       - name: Checkout Frontend
         uses: actions/checkout@v4

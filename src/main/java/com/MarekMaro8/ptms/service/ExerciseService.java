@@ -1,10 +1,10 @@
-
 package com.MarekMaro8.ptms.service;
 
-import com.MarekMaro8.ptms.dto.exercise.ExerciseCreationDTO; // Import
+import com.MarekMaro8.ptms.dto.exercise.ExerciseCreationDTO;
 import com.MarekMaro8.ptms.dto.exercise.ExerciseDTO;
-import com.MarekMaro8.ptms.dto.exercise.ExerciseMapper;     // Import
+import com.MarekMaro8.ptms.dto.exercise.ExerciseMapper;
 import com.MarekMaro8.ptms.exception.ResourceAlreadyExistsException;
+import com.MarekMaro8.ptms.exception.ResourceNotFoundException;
 import com.MarekMaro8.ptms.model.Exercise;
 import com.MarekMaro8.ptms.repository.ExerciseRepository;
 import org.springframework.stereotype.Service;
@@ -41,5 +41,12 @@ public class ExerciseService {
         Exercise saved = exerciseRepository.save(exercise);
 
         return exerciseMapper.toDto(saved);
+    }
+
+    public void deleteExercise(Long exerciseId) {
+        Exercise exercise = exerciseRepository.findById(exerciseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exercise", "id", exerciseId));
+        exerciseRepository.delete(exercise);
+
     }
 }

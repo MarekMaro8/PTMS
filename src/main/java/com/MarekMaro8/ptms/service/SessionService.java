@@ -176,8 +176,6 @@ public class SessionService {
                 .collect(Collectors.toList());
     }
 
-
-
     // FINALIZACJA
     @Transactional
     public SessionDTO completeSession(Long sessionId, String userEmail) {
@@ -190,6 +188,16 @@ public class SessionService {
         session.setEndTime(LocalDateTime.now());
         session.setCompleted(true);
         return sessionMapper.toDto(sessionRepository.save(session));
+    }
+
+    @Transactional
+
+    public void deleteSession(Long sessionId, String userEmail) {
+        Session session = validateSessionAccess(sessionId, userEmail);
+        if(!session.isCompleted()) {
+            throw new BusinessRuleException("Cannot delete an active session. Please complete it first.");
+        }
+        sessionRepository.delete(session);
     }
 
     // NOTATKI

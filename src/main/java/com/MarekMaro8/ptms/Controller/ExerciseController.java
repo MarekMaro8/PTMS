@@ -35,4 +35,12 @@ public class ExerciseController {
         ExerciseDTO createdExercise = exerciseService.createExercise(exerciseCreationDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdExercise);
     }
+
+    @PreAuthorize("hasRole('TRAINER')")
+    @DeleteMapping("/{exerciseId}")
+    public ResponseEntity<Void> deleteExercise(@PathVariable Long exerciseId) {
+        exerciseService.deleteExercise(exerciseId);
+
+         return ResponseEntity.noContent().build();
+    }
 }

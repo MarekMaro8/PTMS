@@ -73,6 +73,14 @@ public class ClientWorkoutController {
         SessionDTO completedSession = sessionService.completeSession(sessionId, principal.getName());
         return ResponseEntity.ok(completedSession);
     }
+    // Delete Session
+    @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSession(@PathVariable Long id, Principal principal) {
+        sessionService.deleteSession(id, principal.getName());
+
+        return ResponseEntity.noContent().build();
+    }
 
     // Update Notes
     @PreAuthorize("hasAnyRole('CLIENT', 'TRAINER')")

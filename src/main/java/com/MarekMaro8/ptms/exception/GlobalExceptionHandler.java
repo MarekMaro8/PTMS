@@ -12,8 +12,13 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     // 1. Obsługa ResourceNotFound (404)
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -75,8 +80,7 @@ public class GlobalExceptionHandler {
                 "An unexpected error occurred.",
                 request.getDescription(false).replace("uri=", "")
         );
-        // Opcjonalnie: Tutaj dodaj logowanie błędu do konsoli (logger.error)
-        ex.printStackTrace();
+        logger.error("Unexpected error occurred: {}", ex.getMessage(), ex);
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

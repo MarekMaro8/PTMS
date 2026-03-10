@@ -52,6 +52,6 @@ The project is built upon modern, industry-standard technologies:
 - PostgreSQL 14+
 - Gradle
 
-📖 API Documentation (Swagger)
+## 📖 API Documentation (Swagger)
 Once the application is running, the interactive API documentation provided by Swagger/OpenAPI is accessible at:
 👉 http://localhost:8080/swagger-ui.html

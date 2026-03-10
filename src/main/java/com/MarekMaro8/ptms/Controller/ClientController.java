@@ -42,6 +42,7 @@ public class ClientController {
         return ResponseEntity.ok(clientService.findAllClientsWithoutTrainer());
     }
 
+    @PreAuthorize("hasRole('TRAINER')")
     @GetMapping("/count")
     public ResponseEntity<Long> getClientsCount(Principal principal) {
         long count = clientService.getClientCount();
